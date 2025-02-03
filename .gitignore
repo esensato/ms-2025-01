@@ -1,8 +1,11 @@
 # Compiled class file
 *.class
-
+*.DS_Store
+local/
+.vscode/
 # Log file
 *.log
+.mvn/
 
 # BlueJ files
 *.ctxt
