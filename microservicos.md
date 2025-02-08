@@ -4,59 +4,107 @@
 
 ## Injeção de Dependência
 
-- Incluir as dependências do projeto (`pom.xml`) - opcional se estiver utilizando *Spring Boot*
-    ```xml
-    <dependency>
-    	<groupId>org.springframework</groupId>
-    	<artifactId>spring-beans</artifactId>
-    	<version>4.3.3.RELEASE</version>
-    </dependency>
-    <dependency>
-    	<groupId>org.springframework</groupId>
-    	<artifactId>spring-context</artifactId>
-    	<version>4.3.3.RELEASE</version>
-    </dependency>
-    <dependency>
-    	<groupId>org.springframework</groupId>
-    	<artifactId>spring-core</artifactId>
-    	<version>4.3.3.RELEASE</version>
-    </dependency>
-    ```
-- Criar uma interface `Operacao`
+- Calculadora **monolítico**
+```java
+package microservicos;
 
-    ```java
-    package beans;
-    
-    public interface Operacao {
-        float executar(float v1, float v2);
-    }
-    ```
-- Criar uma classe `Somar`
-    ```java
-    package beans;
-    
-    public class Somar implements Operacao {
-    
-        @Override
-        public float executar(float v1, float v2) {
-            return v1 + v2;
+public class CalculadoraMonolitica {
+
+    public void calcular(String[] args) {
+        String operacao = args[0];
+        Integer n1 = Integer.parseInt(args[1]);
+        Integer n2 = Integer.parseInt(args[2]);
+
+        System.out.println("\n\n------------ CALCULADORA MONOLITICA ------------");
+        System.out.print("Resultado: ");
+
+        if (operacao.equals("soma")) {
+            System.out.println(n1 + n2);
+        } else if (operacao.equals("subtracao")) {
+            System.out.println(n1 - n2);
+        } else if (operacao.equals("divisao")) {
+            System.out.println(n1 / n2);
+        } else if (operacao.equals("multiplicacao")) {
+            System.out.println(n1 * n2);
+        } else {
+            System.out.println("Operacao invalida: " + operacao);
         }
-    
+
+        System.out.println();
+
     }
-    ```
-- Criar uma classe `Multiplicar`
-    ```java
-    package beans;
-    
-    public class Multiplicar implements Operacao {
-    
+
+    public static void main(String[] args) {
+
+        // Calculadora instanciada pelo usuário, dono do fluxo principal
+        CalculadoraMonolitica c = new CalculadoraMonolitica();
+        c.calcular(args);
+
+    }
+}
+```
+- Calculadora com **Spring**
+- Incluir as dependências do projeto (`pom.xml`) - opcional se estiver utilizando *Spring Boot*
+```xml
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-beans</artifactId>
+    <version>4.3.3.RELEASE</version>
+</dependency>
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-context</artifactId>
+    <version>4.3.3.RELEASE</version>
+</dependency>
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-core</artifactId>
+    <version>4.3.3.RELEASE</version>
+</dependency>
+```
+- Criar uma interface `Operacao`
+```java
+package microservicos;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public interface Operacao {
+    float executar(Integer v1, Integer v2);
+}
+```
+- Criar uma classe `Somar`
+```java
+package microservicos;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public class Somar implements Operacao {
+
     @Override
-    public float executar(float v1, float v2) {
-      return v1 * v2;
+    public float executar(Integer v1, Integer v2) {
+        return v1 + v2;
     }
-    
+
+}
+```
+- Criar uma classe `Multiplicar`
+```java
+package microservicos;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public class Multiplicar implements Operacao {
+
+    @Override
+    public float executar(Integer v1, Integer v2) {
+        return v1 * v2;
     }
-    ```
+
+}
+```
 - Criar um arquivo `beans.xml` (dentro da pasta `/src/main/java`)
 
 ```xml
@@ -72,26 +120,63 @@
     http://www.springframework.org/schema/context/spring-context-3.2.xsd"
     xmlns:context="http://www.springframework.org/schema/context">
 
-    <bean id="somar" class="beans.Somar" />
-    <bean id="multiplicar" class="beans.Multiplicar" />
 
+<context:annotation-config />
+<context:component-scan base-package="microservicos" />
+<bean id="calculadora" class="microservicos.CalculadoraSpring">
+ <property name="operacao" ref="multiplicar" />
+</bean>
 </beans>
 ```
 
 - Class principal
 ```java
-public class DemoApplication {
+package microservicos;
 
-@SuppressWarnings("resource")
-public static void main(String[] args) {
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
- ApplicationContext ctx = new ClassPathXmlApplicationContext("beans.xml");
- Operacao op1 = (Operacao) ctx.getBean("somar");
- Operacao op2 = (Operacao) ctx.getBean("multiplicar");
+public class CalculadoraSpring {
 
- System.out.println(op1.executar(10.0f, 20.0f));
- System.out.println(op2.executar(10.0f, 20.0f));
+    // operação é definida no beans.xml
+    private Operacao operacao;
 
+    public void calcular(String[] args) {
+        Integer n1 = Integer.parseInt(args[0]);
+        Integer n2 = Integer.parseInt(args[1]);
+
+        System.out.println("\n------------ CALCULADORA SPRING ------------");
+        System.out.print("Resultado: ");
+        // qual operação será executada? Depende do que foi definido no beans.xml
+        System.out.println(operacao.executar(n1, n2));
+        System.out.println();
+
+    }
+
+    public void setOperacao(Operacao operacao) {
+        this.operacao = operacao;
+    }
+
+    @SuppressWarnings("resource")
+    public static void main(String[] args) {
+
+        // cria o contexto e carrega os beans definidos no beans.xml
+        // ou anotados com @Service (vide Multiplicar e Somar)
+        ApplicationContext ctx = new ClassPathXmlApplicationContext("beans.xml");
+
+        System.out.println("\nBeans reconhecidos dentro do contexto:\n");
+
+        for (String beanName : ctx.getBeanDefinitionNames()) {
+            // Evita que o nome dos beans do proprio spring sejam exibidos
+            if (!beanName.contains("org.springframework")) {
+                System.out.println(" - " + beanName);
+            }
+        }
+
+        CalculadoraSpring c = ctx.getBean("calculadora", CalculadoraSpring.class);
+        c.calcular(args);
+
+    }
 }
 ```
 
