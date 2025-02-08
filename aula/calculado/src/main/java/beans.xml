@@ -11,9 +11,9 @@
     xmlns:context="http://www.springframework.org/schema/context">
 
 
-<context:annotation-config />
-<context:component-scan base-package="microservicos" />
-<bean id="calculadora" class="microservicos.CalculadoraSpring">
- <property name="operacao" ref="multiplicar" />
-</bean>
+    <context:annotation-config />
+    <context:component-scan base-package="microservicos" />
+    <bean id="calculadora" class="microservicos.CalculadoraSpring">
+    <property name="operacao" ref="multiplicar" />
+    </bean>
 </beans>
