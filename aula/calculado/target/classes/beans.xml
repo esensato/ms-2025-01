@@ -14,6 +14,6 @@
     <context:annotation-config />
     <context:component-scan base-package="microservicos" />
     <bean id="calculadora" class="microservicos.CalculadoraSpring">
-    <property name="operacao" ref="multiplicar" />
+    <property name="operacao" ref="subtrair" />
     </bean>
 </beans>

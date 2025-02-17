@@ -394,7 +394,8 @@ public class CalculadoraSpring {
     ```
 - Definir o *Bean* para a persistência
     ```java
-    @Entity(name="TAB_ALUNO")
+    @Entity
+    @Table(name="TAB_ALUNO")
     public class AlunoEntity {
     @Id
     @Column(name = "ID_ALUNO")
