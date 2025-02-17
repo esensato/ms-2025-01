@@ -290,6 +290,7 @@ public class CalculadoraSpring {
     ```
 - Alterar o parâmetro do *header* da requisição `Accept: application/xml`
 ## Processando POST
+- Instalar o [Postman](https://www.postman.com/downloads/)
 - Processando requisições do tipo *POST*
     ```java
     @PostMapping("/cadastrar")

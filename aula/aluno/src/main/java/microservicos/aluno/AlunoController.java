@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/aluno")
@@ -31,21 +33,30 @@ public class AlunoController {
     // end-point para pesquisar um aluno pelo RA
     // GET http://localhost:8080/aluno/123?incluirDisciplinas=true
     @GetMapping("/{ra}")
-    public ResponseEntity<String> obterAluno(@PathVariable Long ra,
+    public ResponseEntity<AlunoEntity> obterAluno(@PathVariable Long ra,
             @RequestParam(name = "incluirDisciplinas", required = false, defaultValue = "false") Boolean incluirDisciplinas) {
         logger.debug("Obtendo dados do RA: " + ra);
         logger.debug("incluirDisciplinas: " + incluirDisciplinas);
-        ResponseEntity<String> resposta;
+        ResponseEntity<AlunoEntity> resposta;
         if (ra == 100) {
-            resposta = new ResponseEntity<String>("Aluno nao localizado", HttpStatus.NOT_FOUND);
+            resposta = new ResponseEntity<AlunoEntity>(new AlunoEntity(), HttpStatus.NOT_FOUND);
         } else {
-            String disciplinas = "";
+            AlunoEntity aluno = new AlunoEntity();
             if (incluirDisciplinas) {
-                disciplinas = " - Desenvolvimento Micro Servicos";
+                aluno.getDisciplinas().add("Desenvolvimento Micro Servicos");
             }
-            resposta = new ResponseEntity<String>("Joao da Silva" + disciplinas, HttpStatus.OK);
+            aluno.setRa(ra.toString());
+            aluno.setNome("Joao da Silva");
+            resposta = new ResponseEntity<AlunoEntity>(aluno, HttpStatus.OK);
         }
         return resposta;
+    }
+
+    @PostMapping
+    public ResponseEntity<String> criarAluno(@RequestBody AlunoEntity novoAlunoEntity) {
+        logger.debug(
+                novoAlunoEntity.getRa() + " - " + novoAlunoEntity.getNome() + " - " + novoAlunoEntity.getDisciplinas());
+        return new ResponseEntity<String>("Aluno criado: " + novoAlunoEntity.getNome(), HttpStatus.OK);
     }
 
 }
