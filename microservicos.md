@@ -302,7 +302,7 @@ public class CalculadoraSpring {
 ## Tratamento de Erros
 - Criar uma classe para encapsular o tipo de exceção
     ```java
-    public class AlunoNaoLocalizadoException extends Throwable {
+    public class AlunoNaoLocalizadoException extends RuntimeException {
     }
     ```
 - Definir uma classe para lidar com as exceções
@@ -385,12 +385,12 @@ public class CalculadoraSpring {
 - Criar um arquivo `data.sql` dentro da pasta `resources`
     ```sql
     DROP TABLE IF EXISTS tab_aluno;
-     
+    
     CREATE TABLE tab_aluno (
-      id_aluno INT AUTO_INCREMENT PRIMARY KEY,
-      nome VARCHAR(30) NOT NULL,
-      turma VARCHAR(10) NOT NULL,
-      curso VARCHAR(50) DEFAULT NULL
+        id_aluno INT AUTO_INCREMENT PRIMARY KEY,
+        nome VARCHAR(30) NOT NULL,
+        turma VARCHAR(10) NOT NULL,
+        curso VARCHAR(50) DEFAULT NULL
     );
     ```
 - Definir o *Bean* para a persistência
