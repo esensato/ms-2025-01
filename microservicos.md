@@ -307,8 +307,8 @@ public class CalculadoraSpring {
     ```
 - Definir uma classe para lidar com as exceções
     ```java
-    @ControllerAdvice
-    public class ApplicationExceptionHandler {
+    @RestControllerAdvice
+    public class GlobalExceptionHandler {
         @ResponseStatus(
                 value = HttpStatus.NOT_FOUND,
                 reason = "Aluno não localizado!")
@@ -344,17 +344,15 @@ public class CalculadoraSpring {
     @Size(min = 10, message="Nome deve conter no minimo 10 caracteres")
     private String nome;
     ```
-- Definir o tratamento de erro no *Controller*
+- Definir o tratamento de erro no *Controller Advice* (`GlobalExceptionHandler`) caso o tratamento seja global
     ```java
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public Map<String, String> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<String, String>();
-     
-        ex.getBindingResult().getFieldErrors().forEach(error -> 
-            errors.put(error.getField(), error.getDefaultMessage()));
-         
-        return errors;
+        Map<String, String> errors = new HashMap<String, String>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+        errors.put(error.getField(), error.getDefaultMessage()));
+        return errors;
     }
     ```
 ## Persistência

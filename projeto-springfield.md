@@ -6,10 +6,10 @@ Atualmente ela possui apenas uma base com alguns dados de seus moradores armazen
 
 ```sql
 CREATE TABLE CAD_CIDADAO (
-    ID INT PRIMARY KEY CHECK (ID BETWEEN 10000 AND 99999),  -- ID com 5 dígitos
-    nome VARCHAR(255),  -- Nome do cidadão (string de até 255 caracteres)
-    endereco VARCHAR(255),  -- Endereço do cidadão (string de até 255 caracteres)
-    bairro VARCHAR(255)  -- Bairro do cidadão (string de até 255 caracteres)
+    ID INT PRIMARY KEY CHECK (ID BETWEEN 10000 AND 99999),  -- ID
+    nome VARCHAR(255),  -- Nome do cidadão
+    endereco VARCHAR(255),  -- Endereço do cidadão
+    bairro VARCHAR(255)  -- Bairro do cidadão
 );
 ```
 
