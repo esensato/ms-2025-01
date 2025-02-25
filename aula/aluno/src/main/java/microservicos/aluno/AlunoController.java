@@ -2,6 +2,10 @@ package microservicos.aluno;
 
 // importação dos logs
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,23 +41,50 @@ public class AlunoController {
         return new ResponseEntity<String>(mensagem, HttpStatus.OK);
     }
 
+    // retorna todos os alunos cadastrados
+    @GetMapping("/todos")
+    public ResponseEntity<Iterable<AlunoEntity>> todos() {
+        // retorna todos os alunos cadastrados na base
+        Iterable<AlunoEntity> alunos = repo.findAll();
+        return new ResponseEntity<Iterable<AlunoEntity>>(alunos, HttpStatus.OK);
+    }
+
+    // retorna total de alunos
+    @GetMapping("/total")
+    public ResponseEntity<Long> total() {
+        return new ResponseEntity<Long>(repo.count(), HttpStatus.OK);
+    }
+
+    // obtem todos os alunos pelo nome
+    @GetMapping("/nome/{nome}")
+    public ResponseEntity<Iterable<AlunoEntity>> obterAlunoNome(@PathVariable String nome) {
+
+        Iterable<AlunoEntity> alunos = repo.findByNomeContains(nome);
+        return new ResponseEntity<Iterable<AlunoEntity>>(alunos, HttpStatus.OK);
+    }
+
     // end-point para pesquisar um aluno pelo RA
     // GET http://localhost:8080/aluno/123?incluirDisciplinas=true
     @GetMapping("/{ra}")
-    public ResponseEntity<AlunoEntity> obterAluno(@PathVariable Long ra,
+    public ResponseEntity<AlunoEntity> obterAluno(@PathVariable String ra,
             @RequestParam(name = "incluirDisciplinas", required = false, defaultValue = "false") Boolean incluirDisciplinas) {
         logger.debug("Obtendo dados do RA: " + ra);
         logger.debug("incluirDisciplinas: " + incluirDisciplinas);
+
+        // verificar se o ra de fato existe na base
+        boolean semResultado = repo.findById(ra).isEmpty();
+        logger.debug("Sem resultado? " + semResultado);
+
         ResponseEntity<AlunoEntity> resposta;
-        if (ra == 100) {
+        if (semResultado) {
             resposta = new ResponseEntity<AlunoEntity>(new AlunoEntity(), HttpStatus.NOT_FOUND);
         } else {
-            AlunoEntity aluno = new AlunoEntity();
-            if (incluirDisciplinas) {
-                aluno.getDisciplinas().add("Desenvolvimento Micro Servicos");
+            // obtem o aluno por meio do ra
+            AlunoEntity aluno = repo.findById(ra).get();
+            if (!incluirDisciplinas) {
+                // apaga as disciplinas
+                aluno.setDisciplinas(new ArrayList<String>());
             }
-            aluno.setRa(ra.toString());
-            aluno.setNome("Joao da Silva");
             resposta = new ResponseEntity<AlunoEntity>(aluno, HttpStatus.OK);
         }
         return resposta;
@@ -82,11 +113,23 @@ public class AlunoController {
     // --header 'Content-Type: application/json'
     // --data '{"nome": "Maria Silva Lima"}'
     @PutMapping("/{ra}")
-    public ResponseEntity<String> atualizarAluno(@PathVariable String ra, @RequestBody AlunoEntity novoAlunoEntity) {
+    public ResponseEntity<AlunoEntity> atualizarAluno(@PathVariable(required = true) String ra,
+            @RequestBody AlunoEntity alunoEntity) {
 
-        logger.debug(
-                ra + " - " + novoAlunoEntity.getNome() + " - " + novoAlunoEntity.getDisciplinas());
-        return new ResponseEntity<String>("Aluno atualizado: " + novoAlunoEntity.getNome(), HttpStatus.OK);
+        // se o ra informado nao existir entao retorna 404
+        if (repo.findById(ra).isEmpty()) {
+            throw new AlunoInexistenteException();
+        } else {
+            // save e utilizado tanto para criar um novo registro quanto para atualizar
+            // um registro ja existente
+            // se id nao existe (ou nulo) então INSERT caso contrario UPDATE
+            // garante que o ra (id) está definido
+            alunoEntity.setRa(ra);
+            repo.save(alunoEntity);
+            logger.debug(
+                    ra + " - " + alunoEntity.getNome() + " - " + alunoEntity.getDisciplinas());
+            return new ResponseEntity<AlunoEntity>(alunoEntity, HttpStatus.OK);
+        }
 
     }
 
@@ -94,12 +137,16 @@ public class AlunoController {
     // curl --location --request DELETE 'http://localhost:8080/aluno/200' --header
     // 'Content-Type: application/json'
     @DeleteMapping("/{ra}")
-    public ResponseEntity<String> removerAluno(@PathVariable Integer ra) {
-        if (ra == 100) {
+    public ResponseEntity<String> removerAluno(@PathVariable(required = true) String ra) {
+        // se o ra informado nao existir entao retorna 404
+        if (!repo.existsById(ra)) {
             throw new AlunoInexistenteException();
+        } else {
+            // exclui o registro da base
+            repo.deleteById(ra);
+            return new ResponseEntity<String>("Aluno excluido: " + ra, HttpStatus.OK);
         }
-        logger.debug("RA: " + ra);
-        return new ResponseEntity<String>("Removido aluno: " + ra, HttpStatus.OK);
 
     }
+
 }

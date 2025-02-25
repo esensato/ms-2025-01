@@ -10,5 +10,4 @@ insert into tab_aluno(ra, nome, disciplinas) values ('100', 'Joao Silva', 'Dev M
 
 insert into tab_aluno(ra, nome, disciplinas) values ('200', 'Maria Pereira', 'Design');
 
-
-
+insert into tab_aluno(ra, nome, disciplinas) values ('300', 'Marcos Pereira', 'Programação Cobol');
