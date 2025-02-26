@@ -40,7 +40,7 @@ CREATE TABLE CAD_CIDADAO (
     <artifactId>spring-cloud-azure-starter</artifactId>
 </dependency>
 ```
-- As propriedades devem ser definidas:
+- As propriedades devem ser definidas (PEGAR A SENHA DENTRO DA ATIVIDADE NO CANVAS!!!!!):
 
     ```
     spring.application.name=springfield
