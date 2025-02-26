@@ -40,6 +40,17 @@ CREATE TABLE CAD_CIDADAO (
     <artifactId>spring-cloud-azure-starter</artifactId>
 </dependency>
 ```
+- As propriedades devem ser definidas:
+
+    ```
+    spring.application.name=springfield
+    logging.level.org.hibernate.SQL=DEBUG
+    spring.datasource.url=jdbc:sqlserver://db-springfield.database.windows.net:1433;database=springfield;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+    spring.datasource.username=dbuser@db-springfield
+    spring.datasource.password=
+    spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.SQLServer2016Dialect
+    ```
+
 1. Criar `end points` para:
     1. Listar todos os cidadãos presentes na base;
     1. Permitir a consulta de um cidadão pelo seu número (`ID`) e retornar os seus dadods;
