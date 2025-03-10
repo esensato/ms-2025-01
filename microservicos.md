@@ -502,7 +502,17 @@ public class CalculadoraSpring {
 - Adicionar uma configuração `spring.data.rest.basePath=/api`
 - Para testar: `http://localhost:8080/api`
 - [Referência](https://docs.spring.io/spring-data/rest/docs/current-SNAPSHOT/reference/html/#reference)
-- Utilizar a anotação `@RestResource`
+- Utilizar a anotação `@RestResource` para bloquear determinados métodos
+- `@RepositoryRestResource` pode ser utilizado para definir o caminho para acessar o *endpoint*
+    ```java
+    @RepositoryRestResource(path = "aluno", collectionResourceRel = "lista")
+    public interface AlunoRestResource extends JpaRepository<AlunoEntity, String> {
+    
+            @Override
+            @RestResource(exported = false)
+            void deleteById(String id);
+    }        
+    ```
 - Para incluir o atribudo `id` nas respostas das APIs mapeadas pelo *Data Rest*
     ```java
     @Component
