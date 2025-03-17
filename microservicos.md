@@ -615,6 +615,126 @@ public class CalculadoraSpring {
     ```java
     DisciplinaBean disciplina = objectMapper.readValue(disciplinas.getJSONObject(i).toString(), DisciplinaBean.class);
     ```
+### Utilizando o Open Feign
+- Uma alternativa para realizar requisições HTTP
+    ```xml
+    <dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-openfeign</artifactId>
+    <version>4.2.0</version>
+    </dependency>
+    ```
+- Implementar as requisições
+    ```java
+    @FeignClient(name = "aluno", url = "localhost:8080")
+    public interface AlunoClienteFeign {
+    
+        @GetMapping("/aluno/{rm}")
+        public ResponseEntity<AlunoEntity> obterAluno(@PathVariable String rm);
+    
+    }
+    ```
+- Testar o acesso
+    ```java
+    @Autowired
+    private AlunoServico servico;
+    
+    @Override
+    public void run(String... args) throws Exception {
+    
+        System.out.println("----------------");
+        System.out.println(alunoFeign.obterAluno("400").getBody().getNome());
+    
+    }
+    ```
+### Spring State Machine
+- Importar as dependências
+    ```xml
+    <dependency>
+        <groupId>org.springframework.statemachine</groupId>
+        <artifactId>spring-statemachine-starter</artifactId>
+        <version>3.2.1</version>
+    </dependency>
+    ```
+- Criar os estados e eventos
+```java
+public enum AlunoEstado {
+    SOLICITADO, APROVADO, RECUSADO, CONCLUIDO
+}
+```
+```java
+public enum AlunoEvento {
+    APROVAR, RECUSAR
+}
+```
+- Implementar a configuração
+    ```java
+    @Configuration
+    @EnableStateMachine
+    public class AlunoEstadoConfig extends StateMachineConfigurerAdapter<AlunoEstado, AlunoEvento> {
+    
+        @Override
+        public void configure(StateMachineConfigurationConfigurer<AlunoEstado, AlunoEvento> config) throws Exception {
+            config
+                    .withConfiguration()
+                    .autoStartup(true)
+                    .listener(listener());
+        }
+    
+        @Override
+        public void configure(StateMachineStateConfigurer<AlunoEstado, AlunoEvento> states) throws Exception {
+    
+            states
+                    .withStates()
+                    .initial(AlunoEstado.SOLICITADO)
+                    .end(AlunoEstado.CONCLUIDO)
+                    .state(AlunoEstado.APROVADO)
+                    .state(AlunoEstado.RECUSADO);
+    
+        }
+    
+        @Override
+        public void configure(StateMachineTransitionConfigurer<AlunoEstado, AlunoEvento> transitions) throws Exception {
+    
+            transitions.withExternal()
+                    .source(AlunoEstado.SOLICITADO).target(AlunoEstado.APROVADO).event(AlunoEvento.APROVAR)
+                    .and()
+                    .withExternal()
+                    .source(AlunoEstado.SOLICITADO).target(AlunoEstado.RECUSADO).event(AlunoEvento.RECUSAR);
+        }
+    
+        @Bean
+        public StateMachineListener<AlunoEstado, AlunoEvento> listener() {
+            return new StateMachineListenerAdapter<AlunoEstado, AlunoEvento>() {
+                @Override
+                public void stateChanged(State<AlunoEstado, AlunoEvento> from, State<AlunoEstado, AlunoEvento> to) {
+                    System.out.println("Estado alterado para: " + to.getId());
+                }
+            };
+        }
+    
+    }
+    ```
+- Efetuar as transições de eventos entre os estados
+```java
+@Component
+public class AlunoServico {
+
+    @Autowired
+    private StateMachine<AlunoEstado, AlunoEvento> stateMachine;
+
+    public void init() {
+        stateMachine.startReactively().block();
+    }
+
+    public void solicitar() {
+
+        stateMachine.sendEvent(Mono.just(MessageBuilder.withPayload(AlunoEvento.APROVAR).build())).blockFirst();
+
+    }
+
+}
+```
 # Exercício
 - Implementar um serviço CRUD para disciplina com os seguintes requisitos (utilizar *Data Rest*):
     - Disciplina possui um id numérico sequencial, um nome e carga horária;

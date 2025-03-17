@@ -4,7 +4,6 @@ package microservicos.aluno;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +15,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.validation.Valid;
+
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,9 +29,9 @@ public class AlunoController {
 
     private static final Logger logger = LoggerFactory.getLogger(AlunoController.class);
 
-    // Acesso à base de dados de aluno
+    // Classe de servicos de Aluno
     @Autowired
-    private AlunoRepository repo;
+    private AlunoService service;
 
     @Value("${microservicos.aluno.mensagem}")
     private String mensagem;
@@ -45,21 +47,37 @@ public class AlunoController {
     @GetMapping("/todos")
     public ResponseEntity<Iterable<AlunoEntity>> todos() {
         // retorna todos os alunos cadastrados na base
-        Iterable<AlunoEntity> alunos = repo.findAll();
+        Iterable<AlunoEntity> alunos = service.todos();
         return new ResponseEntity<Iterable<AlunoEntity>>(alunos, HttpStatus.OK);
     }
 
     // retorna total de alunos
     @GetMapping("/total")
     public ResponseEntity<Long> total() {
-        return new ResponseEntity<Long>(repo.count(), HttpStatus.OK);
+        return new ResponseEntity<Long>(service.total(), HttpStatus.OK);
     }
 
     // obtem todos os alunos pelo nome
     @GetMapping("/nome/{nome}")
     public ResponseEntity<Iterable<AlunoEntity>> obterAlunoNome(@PathVariable String nome) {
 
-        Iterable<AlunoEntity> alunos = repo.findByNomeContains(nome);
+        Iterable<AlunoEntity> alunos = service.obterAlunoNome(nome);
+        return new ResponseEntity<Iterable<AlunoEntity>>(alunos, HttpStatus.OK);
+    }
+
+    // obtem todos os nomes dos alunos
+    @GetMapping("/nomes")
+    public ResponseEntity<Iterable<String>> obterNomes() {
+
+        Iterable<String> alunos = service.obterNomes();
+        return new ResponseEntity<Iterable<String>>(alunos, HttpStatus.OK);
+    }
+
+    // obtem todos os alunos pelo ra
+    @GetMapping("/ra/{ra}")
+    public ResponseEntity<Iterable<AlunoEntity>> obterAlunoRa(@PathVariable String ra) {
+
+        Iterable<AlunoEntity> alunos = service.obterAlunoRa(ra);
         return new ResponseEntity<Iterable<AlunoEntity>>(alunos, HttpStatus.OK);
     }
 
@@ -71,23 +89,11 @@ public class AlunoController {
         logger.debug("Obtendo dados do RA: " + ra);
         logger.debug("incluirDisciplinas: " + incluirDisciplinas);
 
-        // verificar se o ra de fato existe na base
-        boolean semResultado = repo.findById(ra).isEmpty();
-        logger.debug("Sem resultado? " + semResultado);
-
-        ResponseEntity<AlunoEntity> resposta;
-        if (semResultado) {
-            resposta = new ResponseEntity<AlunoEntity>(new AlunoEntity(), HttpStatus.NOT_FOUND);
-        } else {
-            // obtem o aluno por meio do ra
-            AlunoEntity aluno = repo.findById(ra).get();
-            if (!incluirDisciplinas) {
-                // apaga as disciplinas
-                aluno.setDisciplinas(new ArrayList<String>());
-            }
-            resposta = new ResponseEntity<AlunoEntity>(aluno, HttpStatus.OK);
-        }
-        return resposta;
+        AlunoEntity aluno = service.obterAluno(ra, incluirDisciplinas);
+        if (aluno == null) {
+            return new ResponseEntity<AlunoEntity>(aluno, HttpStatus.NOT_FOUND);
+        } else
+            return new ResponseEntity<AlunoEntity>(aluno, HttpStatus.OK);
     }
 
     // Cria um novo aluno recebendo no corpo da requisição POST
@@ -98,13 +104,12 @@ public class AlunoController {
     // --header 'Content-Type: application/json'
     // --data '{"ra": "200","nome": "Maria Silva","disciplinas": ["Dev Mobile"]}'
     @PostMapping
-    public ResponseEntity<String> criarAluno(@RequestBody AlunoEntity novoAlunoEntity) {
+    public ResponseEntity<String> criarAluno(@RequestBody @Valid AlunoEntity novoAlunoEntity) {
         logger.debug(
                 novoAlunoEntity.getRa() + " - " + novoAlunoEntity.getNome() + " - " + novoAlunoEntity.getDisciplinas());
 
         // cria o novo aluno na base de dados
-        repo.save(novoAlunoEntity);
-        return new ResponseEntity<String>("Aluno criado: " + novoAlunoEntity.getNome(), HttpStatus.OK);
+        return new ResponseEntity<String>("Aluno criado: " + service.criarAluno(novoAlunoEntity), HttpStatus.OK);
     }
 
     // Atualizar os dados de um aluno
@@ -114,22 +119,10 @@ public class AlunoController {
     // --data '{"nome": "Maria Silva Lima"}'
     @PutMapping("/{ra}")
     public ResponseEntity<AlunoEntity> atualizarAluno(@PathVariable(required = true) String ra,
-            @RequestBody AlunoEntity alunoEntity) {
+            @RequestBody @Valid AlunoEntity alunoEntity) {
 
-        // se o ra informado nao existir entao retorna 404
-        if (repo.findById(ra).isEmpty()) {
-            throw new AlunoInexistenteException();
-        } else {
-            // save e utilizado tanto para criar um novo registro quanto para atualizar
-            // um registro ja existente
-            // se id nao existe (ou nulo) então INSERT caso contrario UPDATE
-            // garante que o ra (id) está definido
-            alunoEntity.setRa(ra);
-            repo.save(alunoEntity);
-            logger.debug(
-                    ra + " - " + alunoEntity.getNome() + " - " + alunoEntity.getDisciplinas());
-            return new ResponseEntity<AlunoEntity>(alunoEntity, HttpStatus.OK);
-        }
+        AlunoEntity aluno = service.atualizarAluno(ra, alunoEntity);
+        return new ResponseEntity<AlunoEntity>(aluno, HttpStatus.OK);
 
     }
 
@@ -138,14 +131,8 @@ public class AlunoController {
     // 'Content-Type: application/json'
     @DeleteMapping("/{ra}")
     public ResponseEntity<String> removerAluno(@PathVariable(required = true) String ra) {
-        // se o ra informado nao existir entao retorna 404
-        if (!repo.existsById(ra)) {
-            throw new AlunoInexistenteException();
-        } else {
-            // exclui o registro da base
-            repo.deleteById(ra);
-            return new ResponseEntity<String>("Aluno excluido: " + ra, HttpStatus.OK);
-        }
+
+        return new ResponseEntity<String>(service.removerAluno(ra), HttpStatus.OK);
 
     }
 
