@@ -530,12 +530,8 @@ public class CalculadoraSpring {
 ## Aplicação Console
 - Para executar uma aplicação Spring Boot no console
     ```java
-    @SpringBootApplication
+    @Component
     public class ConsoleSpring implements CommandLineRunner {
-    
-        public static void main(String[] args) {
-            SpringApplication.run(ConsoleSpring.class, args);
-        }
     
         @Override
         public void run(String... args) throws Exception {
