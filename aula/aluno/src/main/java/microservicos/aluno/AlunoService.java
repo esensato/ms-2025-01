@@ -65,10 +65,11 @@ public class AlunoService {
             resposta = null;
         } else {
             // obtem o aluno por meio do ra
-            AlunoEntity aluno = repo.findById(ra).get();
+            resposta = repo.findById(ra).get();
+            logger.debug("Aluno = " + semResultado);
             if (!incluirDisciplinas) {
                 // apaga as disciplinas
-                aluno.setDisciplinas(new ArrayList<String>());
+                resposta.setDisciplinas(new ArrayList<String>());
             }
 
         }

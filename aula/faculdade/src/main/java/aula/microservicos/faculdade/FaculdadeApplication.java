@@ -1,4 +1,4 @@
-package aula.microservicos.disciplina;
+package aula.microservicos.faculdade;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -6,10 +6,10 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
 @EnableFeignClients
-public class DisciplinaApplication {
+public class FaculdadeApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(DisciplinaApplication.class, args);
+		SpringApplication.run(FaculdadeApplication.class, args);
 	}
 
 }

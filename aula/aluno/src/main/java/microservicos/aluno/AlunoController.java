@@ -3,8 +3,6 @@ package microservicos.aluno;
 // importação dos logs
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -86,8 +84,6 @@ public class AlunoController {
     @GetMapping("/{ra}")
     public ResponseEntity<AlunoEntity> obterAluno(@PathVariable String ra,
             @RequestParam(name = "incluirDisciplinas", required = false, defaultValue = "false") Boolean incluirDisciplinas) {
-        logger.debug("Obtendo dados do RA: " + ra);
-        logger.debug("incluirDisciplinas: " + incluirDisciplinas);
 
         AlunoEntity aluno = service.obterAluno(ra, incluirDisciplinas);
         if (aluno == null) {
