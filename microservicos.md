@@ -665,7 +665,7 @@ public class CalculadoraSpring {
 ### Spring State Machine
 - Aluno pode solicitar o cancelamento de uma matrícula em determinada disciplina
 - Para isso, existe um *worflow* conforme abaixo
-    <img src="img/wf.png" width="400" height="400">
+    <img src="img/wf.png" width="400" height="200">
 - Importar as dependências
     ```xml
     <dependency>
