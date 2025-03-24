@@ -666,7 +666,6 @@ public class CalculadoraSpring {
 - Aluno pode solicitar o cancelamento de uma matrícula em determinada disciplina
 - Para isso, existe um *worflow* conforme abaixo
 ![screenshot](img/wf.png)
-- <img src="img/wf.png" width="800" height="200">
 - Importar as dependências
     ```xml
     <dependency>
