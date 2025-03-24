@@ -323,6 +323,7 @@ public class CalculadoraSpring {
     ```java
     throw new AlunoNaoLocalizadoException();
     ```
+***
 ## Validação de Dados
 - Utilizar o `spring-boot-starter-validation`
     ```xml
@@ -355,6 +356,7 @@ public class CalculadoraSpring {
         return errors;
     }
     ```
+***
 ## Persistência
 - Utilizar o `spring-boot-starter-data-jpa`
     ```xml
@@ -454,7 +456,8 @@ public class CalculadoraSpring {
     return new ResponseEntity<Iterable<AlunoBean>>(dao.findAll(), HttpStatus.OK);
     }
     ```
-## Consultas Derivadas
+***
+### Consultas Derivadas
 - [Referência](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#jpa.query-methods)
 - É possível criar consultas simples porém de forma muito eficiente utilizando-se consultas derivadas, isto é, que seguem um determinado padrão de nomenclatura envolvendo nomes de atributos da entidade
 - Basta declarar a assinatura do método desejado na interface `@Repository`
@@ -464,7 +467,7 @@ public class CalculadoraSpring {
     - `findByTurmaIsNull()` – alunos onde o atributo turma seja nulo
     - `findByNomeContaining(String prefixo)` – alunos cujo nome contenha o prefixo informado
     - `findByNomeLike(String expressao)` – efetua um like no nome, por exemplo, %Joao%
-## Consultas Personalizadas
+### Consultas Personalizadas
 - Além das consultas derivadas também é possível criar consultas personalizadas informando o código SQL diretamente
     ```java
     @Query("select a from GASTO_BEAN a where a.username = ?1")
@@ -490,7 +493,8 @@ public class CalculadoraSpring {
     
     }
     ```
-## Data Rest
+***
+### Data Rest
 - Permite criar endpoints diretamente do repositório sem a necessidade de um *controller*
     ```xml
     <dependency>
@@ -527,6 +531,7 @@ public class CalculadoraSpring {
     }
     ```
 - Para maiores configurações [Vide](https://docs.spring.io/spring-data/rest/docs/current/api/org/springframework/data/rest/core/config/RepositoryRestConfiguration.html)
+***
 ## Aplicação Console
 - Para executar uma aplicação Spring Boot no console
     ```java
@@ -540,6 +545,7 @@ public class CalculadoraSpring {
     
     }
     ```
+***
 ## Efetuando Requisições HTTP
 - Alterar a dependência no `pom.xml` para não incluir o *tomcat* como servidor:
     ```xml
@@ -620,20 +626,32 @@ public class CalculadoraSpring {
     <version>4.2.0</version>
     </dependency>
     ```
+- Habilitar o uso do OpenFeign (`@EnableFeignClients`) na classe `Application`
+    ```java
+    @SpringBootApplication
+    @EnableFeignClients
+    public class AlunoApplication {
+    
+    	public static void main(String[] args) {
+    		SpringApplication.run(AlunoApplication.class, args);
+    	}
+    
+    }
+    ```
 - Implementar as requisições
     ```java
     @FeignClient(name = "aluno", url = "localhost:8080")
     public interface AlunoClienteFeign {
     
-        @GetMapping("/aluno/{rm}")
-        public ResponseEntity<AlunoEntity> obterAluno(@PathVariable String rm);
+        @GetMapping("/aluno/{ra}")
+        public ResponseEntity<AlunoEntity> obterAluno(@PathVariable String ra);
     
     }
     ```
 - Testar o acesso
     ```java
     @Autowired
-    private AlunoServico servico;
+    private AlunoClienteFeign alunoFeign;
     
     @Override
     public void run(String... args) throws Exception {
@@ -643,7 +661,11 @@ public class CalculadoraSpring {
     
     }
     ```
+***
 ### Spring State Machine
+- Aluno pode solicitar o cancelamento de uma matrícula em determinada disciplina
+- Para isso, existe um *worflow* conforme abaixo
+    <img src="img/wf.png" width="400" height="400">
 - Importar as dependências
     ```xml
     <dependency>
@@ -653,84 +675,197 @@ public class CalculadoraSpring {
     </dependency>
     ```
 - Criar os estados e eventos
-```java
-public enum AlunoEstado {
-    SOLICITADO, APROVADO, RECUSADO, CONCLUIDO
-}
-```
-```java
-public enum AlunoEvento {
-    APROVAR, RECUSAR
-}
-```
-- Implementar a configuração
+    ```java
+    public enum CancelamentoMatriculaEstado {
+        SOLICITADO, APROVADO_COORDENADOR, APROVADO_SECRETARIA
+    }
+    ```
+    ```java
+    public enum CancelamentoMatriculaEvento {
+        APROVAR_COORDENADOR, APROVAR_SECRETARIA
+    }
+    ```
+- A configuração da máquina de estados deve ser feita em uma classe anotada com `@Configuration` e `@EnableStateMachine`
     ```java
     @Configuration
-    @EnableStateMachine
-    public class AlunoEstadoConfig extends StateMachineConfigurerAdapter<AlunoEstado, AlunoEvento> {
+    @EnableStateMachineFactory
+    public class CancelamentoWorkflowConfig extends StateMachineConfigurerAdapter<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento> {
+
+        private static final Logger logger = LoggerFactory.getLogger(CancelamentoWorkflowConfig.class);
+        
+    }
+    ```
+- Configurar os estados
+    ```java
+    @Override
+    public void configure(StateMachineStateConfigurer<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento> states)
+            throws Exception {
+
+        states.withStates()
+                .initial(CancelamentoMatriculaEstado.SOLICITADO, initialAction())
+                .end(CancelamentoMatriculaEstado.APROVADO_SECRETARIA)
+                .state(CancelamentoMatriculaEstado.APROVADO_COORDENADOR);
+
+    }
+
+    @Bean
+    public Action<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento> initialAction() {
+        return new Action<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento>() {
+
+            @Override
+            public void execute(StateContext<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento> context) {
+                logger.info("Iniciado o WF Cancelamento de Matricula");
+            }
+        };
+    }
+    ```
+- Configurar as transições entre os estados
+    ```java    
+    @Override
+    public void configure(
+            StateMachineTransitionConfigurer<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento> transitions)
+            throws Exception {
+
+        transitions.withExternal()
+                .source(CancelamentoMatriculaEstado.SOLICITADO).target(CancelamentoMatriculaEstado.APROVADO_COORDENADOR)
+                .event(CancelamentoMatriculaEvento.APROVAR_COORDENADOR)
+                .and()
+                .withExternal()
+                .source(CancelamentoMatriculaEstado.APROVADO_COORDENADOR)
+                .target(CancelamentoMatriculaEstado.APROVADO_SECRETARIA)
+                .event(CancelamentoMatriculaEvento.APROVAR_SECRETARIA);
+
+    }
+    ```
+- Definir as configurações gerais e o *listener* que será acionado quando houver uma transição entre os estados
+    ```java    
+    @Override
+    public void configure(
+            StateMachineConfigurationConfigurer<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento> config)
+            throws Exception {
+
+        config.withConfiguration().autoStartup(true).listener(listener()).machineId("cancelamento-matricula");
+    }
+
+    @Bean
+    public StateMachineListener<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento> listener() {
+        return new StateMachineListenerAdapter<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento>() {
+            @Override
+            public void stateChanged(State<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento> from,
+                    State<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento> to) {
+
+                logger.info("Estado alterado para: " + to.getId());
+            }
+        };
+    }
+    ```
+- Efetuar as transições de eventos entre os estados
+    ```java
+    @Service
+    public class FaculdadeServico {
     
-        @Override
-        public void configure(StateMachineConfigurationConfigurer<AlunoEstado, AlunoEvento> config) throws Exception {
-            config
-                    .withConfiguration()
-                    .autoStartup(true)
-                    .listener(listener());
+        private static final Logger logger = LoggerFactory.getLogger(FaculdadeServico.class);
+    
+        @Autowired
+        private StateMachineFactory<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento> cancelamentoFactory;
+    
+        private StateMachine<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento> cancelamento;
+    
+        public CancelamentoMatriculaEstado solicitar() {
+            this.cancelamento = cancelamentoFactory.getStateMachine();
+            cancelamento.startReactively().block();
+            logger.info("Solicitado Cancelamento::UUID = " + cancelamento.getUuid().toString());
+            logger.info("Estado = " + cancelamento.getState().getId() + " - finalizado = " + cancelamento.isComplete());
+            return cancelamento.getState().getId();
         }
     
-        @Override
-        public void configure(StateMachineStateConfigurer<AlunoEstado, AlunoEvento> states) throws Exception {
+        public CancelamentoMatriculaEstado aprovarCoordenador() {
     
-            states
-                    .withStates()
-                    .initial(AlunoEstado.SOLICITADO)
-                    .end(AlunoEstado.CONCLUIDO)
-                    .state(AlunoEstado.APROVADO)
-                    .state(AlunoEstado.RECUSADO);
+            cancelamento
+                    .sendEvent(
+                            Mono.just(MessageBuilder.withPayload(CancelamentoMatriculaEvento.APROVAR_COORDENADOR).build()))
+                    .blockFirst();
+            logger.info("Estado = " + cancelamento.getState().getId() + " - finalizado = " + cancelamento.isComplete());
+            return cancelamento.getState().getId();
     
         }
     
-        @Override
-        public void configure(StateMachineTransitionConfigurer<AlunoEstado, AlunoEvento> transitions) throws Exception {
+        public CancelamentoMatriculaEstado aprovarSecretaria() {
     
-            transitions.withExternal()
-                    .source(AlunoEstado.SOLICITADO).target(AlunoEstado.APROVADO).event(AlunoEvento.APROVAR)
-                    .and()
-                    .withExternal()
-                    .source(AlunoEstado.SOLICITADO).target(AlunoEstado.RECUSADO).event(AlunoEvento.RECUSAR);
-        }
+            cancelamento
+                    .sendEvent(
+                            Mono.just(MessageBuilder.withPayload(CancelamentoMatriculaEvento.APROVAR_SECRETARIA).build()))
+                    .blockFirst();
+            cancelamento.stopReactively().block();
+            logger.info("Estado = " + cancelamento.getState().getId() + " - finalizado = " + cancelamento.isComplete());
+            return cancelamento.getState().getId();
     
-        @Bean
-        public StateMachineListener<AlunoEstado, AlunoEvento> listener() {
-            return new StateMachineListenerAdapter<AlunoEstado, AlunoEvento>() {
-                @Override
-                public void stateChanged(State<AlunoEstado, AlunoEvento> from, State<AlunoEstado, AlunoEvento> to) {
-                    System.out.println("Estado alterado para: " + to.getId());
-                }
-            };
         }
     
     }
     ```
-- Efetuar as transições de eventos entre os estados
-```java
-@Component
-public class AlunoServico {
+- Finalmente, criar os *endpoints* para executar os eventos
+    ```java
+     @PutMapping("/matricula/cancelar/solicitar/{rm}/{idDisciplina}")
+    public ResponseEntity<CancelamentoMatriculaEstado> solicitarCancelamento(@PathVariable String rm,
+            @PathVariable String idDisciplina) {
 
-    @Autowired
-    private StateMachine<AlunoEstado, AlunoEvento> stateMachine;
-
-    public void init() {
-        stateMachine.startReactively().block();
-    }
-
-    public void solicitar() {
-
-        stateMachine.sendEvent(Mono.just(MessageBuilder.withPayload(AlunoEvento.APROVAR).build())).blockFirst();
+        return new ResponseEntity<CancelamentoMatriculaEstado>(faculdade.solicitar(), HttpStatus.OK);
 
     }
 
-}
-```
+    @PutMapping("/matricula/cancelar/aprovar/coordenador/{rm}/{idDisciplina}")
+    public ResponseEntity<CancelamentoMatriculaEstado> aprovarCoordenador(@PathVariable String rm,
+            @PathVariable String idDisciplina) {
+        return new ResponseEntity<CancelamentoMatriculaEstado>(faculdade.aprovarCoordenador(), HttpStatus.OK);
+
+    }
+
+    @PutMapping("/matricula/cancelar/aprovar/secretaria/{rm}/{idDisciplina}")
+    public ResponseEntity<CancelamentoMatriculaEstado> aprovarSecretaria(@PathVariable String rm,
+            @PathVariable String idDisciplina) {
+        faculdade.aprovarSecretaria();
+        return new ResponseEntity<CancelamentoMatriculaEstado>(faculdade.aprovarSecretaria(), HttpStatus.OK);
+
+    }
+    ```
+- Ações podem ser executadas entre os estados associando uma `action` dentro da classe de configuração (Ex: `CancelamentoWorkflowConfig`)
+- No exemplo baxo são exibidas as variáveis que podem ser associadas na execução da ação
+    ```java
+    public void configure(
+        StateMachineTransitionConfigurer<CancelamentoMatriculaEstado, CancelamentoMatriculaEvento> transitions)
+        throws Exception {
+
+    transitions.withExternal()
+            .source(CancelamentoMatriculaEstado.SOLICITADO).target(CancelamentoMatriculaEstado.APROVADO_COORDENADOR)
+            .event(CancelamentoMatriculaEvento.APROVAR_COORDENADOR)
+            .and()
+            .withExternal()
+            .source(CancelamentoMatriculaEstado.APROVADO_COORDENADOR)
+            .target(CancelamentoMatriculaEstado.APROVADO_SECRETARIA)
+            .event(CancelamentoMatriculaEvento.APROVAR_SECRETARIA)
+            .action(ctx -> {
+                logger.info("Parametros: " + ctx.getStateMachine().getExtendedState().getVariables());
+            });
+
+    }
+    ```
+- Para associar variáveis, alterar a classe de serviços e incluir a variável por meio do `getExtendedState()`
+    ```java
+    public CancelamentoMatriculaEstado aprovarSecretaria() {
+
+    cancelamento.getExtendedState().getVariables().put("ID_ALUNO", "X");
+    
+    cancelamento
+            .sendEvent(
+                    Mono.just(MessageBuilder.withPayload(CancelamentoMatriculaEvento.APROVAR_SECRETARIA).build()))
+            .blockFirst();
+    cancelamento.stopReactively().block();
+    logger.info("Estado = " + cancelamento.getState().getId() + " - finalizado = " + cancelamento.isComplete());
+    return cancelamento.getState().getId();
+
+    }
+    ```
 # Exercício
 - Implementar um serviço CRUD para disciplina com os seguintes requisitos (utilizar *Data Rest*):
     - Disciplina possui um id numérico sequencial, um nome e carga horária;
@@ -738,7 +873,7 @@ public class AlunoServico {
     - Criar um endpoint GET para retornar os dados de uma disciplina por id (GET `http://localhost:8080/api/disciplina/{id}`)
     - Criar um endpoint GET para retornar uma lista contendo todas as disciplinas (GET `http://localhost:8080/api/disciplina`);
     - Criar um endpoint com um método PUT que permita alterar o nome e a carga horária de uma disciplina (PUT `http://localhost:8080/api/disciplina`);
-    - Criar um endpoint com um método DELETE que permita excluir uma disciplina (DELETE `http://localhost:8080/api/disciplina/{id}`);;
+    - Criar um endpoint com um método DELETE que permita excluir uma disciplina (DELETE `http://localhost:8080/api/disciplina/{id}`);
 - Criar um serviço para controle de matrícula:
     - Matrícula possui id do aluno, id da disciplina e um status (ATIVO, CANCELADO)
     - Definir um endpoint para associar o id de um aluno ao id de uma disciplina (POST `http://localhost:8080/matricula/{idAluno}/{idDisciplina}`);

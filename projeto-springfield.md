@@ -62,4 +62,8 @@ CREATE TABLE CAD_CIDADAO (
     1. Somente permitir um único cadastro de usuário por `ID`;
     1. Usuário tem que trocar a senha caso fique mais de 30 dias sem efetuar *login*;
     1. Desbloqueio de usuário bloqueado;
-
+3. Cada cidadão pode utilizar os serviços do portal para realizar diversas solicitações. A fim de controlar o fluxo dessas solicitações é necessário implementar, com o **Spring State Machine** um registro de histórico contendo o `ID` do cidadão, e a data em que o estado foi registrado.
+    1. Os estados possíveis são: SOLICITADO, AGUARDANDO_ANALISE e CONCLUIDO
+    1. As ações são: ANALISAR e CONCLUIR
+    1. Registrar em banco de dados os dados obtidos entre os diferentes estados
+    1. Criar um *endpoint* para visualizar o histórico de um cidadão passando como parâmetro o seu `ID`
