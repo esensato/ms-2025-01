@@ -1,0 +1,236 @@
+{
+	"info": {
+		"_postman_id": "a1df7e47-4211-4782-a9c1-e5677d30606e",
+		"name": "ESPM",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "33426577"
+	},
+	"item": [
+		{
+			"name": "Solicitar Cancelamento",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8084/faculdade/matricula/cancelar/solicitar/100/100",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8084",
+					"path": [
+						"faculdade",
+						"matricula",
+						"cancelar",
+						"solicitar",
+						"100",
+						"100"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Aprovar Cancelamento Coordenador",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8084/faculdade/matricula/cancelar/aprovar/coordenador/100/100",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8084",
+					"path": [
+						"faculdade",
+						"matricula",
+						"cancelar",
+						"aprovar",
+						"coordenador",
+						"100",
+						"100"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Aprovar Cancelamento Secretaria",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8084/faculdade/matricula/cancelar/aprovar/secretaria/100/100",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8084",
+					"path": [
+						"faculdade",
+						"matricula",
+						"cancelar",
+						"aprovar",
+						"secretaria",
+						"100",
+						"100"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Obter Alunos",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/aluno/todos",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"aluno",
+						"todos"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Criar Aluno",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"nome\": \"Joao pereida da Silva\", \"ra\":500}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/aluno",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"aluno"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Obter Total Alunos",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/aluno/total",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"aluno",
+						"total"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Obter Aluno RA",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Atualizar Aluno",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Excluir Aluno",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/aluno/100",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"aluno",
+						"100"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Obter Aluno Nome",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Criar Matricula",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Obter Disciplina",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8082/api/disciplina/100",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"disciplina",
+						"100"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Criar Matricula Faculdade",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}
