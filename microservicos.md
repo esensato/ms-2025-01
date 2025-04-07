@@ -927,16 +927,16 @@ public class CalculadoraSpring {
     }
     ```
 ## Geração Clientes
-- Em nodejs utilizar o pacote[openapi-client-axios](https://www.npmjs.com/package/openapi-client-axios)
+- Em nodejs utilizar o pacote [openapi-client-axios](https://www.npmjs.com/package/openapi-client-axios)
 - Criar um projeto *nodejs*
 ```bash
 mkdir cliente-node
 cd cliente-node
 npm init -y
 ```
-- Importar o `openape-client-axios`
+- Importar o `openape-client-axios` e `openapicmd`
 ```bash
-npm i --save openapi-client-axios
+npm i --save openapi-client-axios openapicmd
 ```
 - Gerar o cliente
 ```bash
@@ -947,13 +947,14 @@ npx openapicmd typegen http://localhost:8080/v3/api-docs > openapi.d.ts
     const OpenAPIClientAxios = require("openapi-client-axios").default;
     
     const api = new OpenAPIClientAxios({
-        definition: "http://localhost:8080/v3/api-docs",
+        definition: "http://localhost:8084/v3/api-docs",
     });
     api.init()
         .then((client) =>
-            client.getAluno(101)
+            client.matricular({ rm: "200", idDisciplina: "200" })
         )
         .then((res) => console.log("Resultado:", res.data));
+    
     ```
 ## Actuator
 - Permite verificar a "saúde" (health) de um serviço, por exemplo, se ele está em execução, sua disponibilidade, configuração, etc...
@@ -967,6 +968,9 @@ npx openapicmd typegen http://localhost:8080/v3/api-docs > openapi.d.ts
 - A porta do actuator pode ser alterada por meio da propriedade `management.server.port` (por exemplo, `8081`)
 - Acessar a URL `http://localhost:8081/actuator` ou `http://localhost:8081/actuator/health`
 - Para incluir maiores informações sobre as informações da disponibilidade dos serviços (*health*) basta ativar a configuração `management.endpoint.health.show-details=always`
+- Outras informações podem ser adicionadas com a propriedade `management.endpoints.web.exposure.include=health,info`
+- Por meio do actuator é também possível terminar um serviço (propriedade `management.endpoint.shutdown.enabled=true`)
+- Outros tipos podem ser visualizados [aqui](https://docs.spring.io/spring-boot/reference/actuator/endpoints.html)
 ### Health Check Personalizado
 - Um health check personalizado permite especificar quando um determinado serviço está acessível
     ```java
@@ -1001,34 +1005,6 @@ npx openapicmd typegen http://localhost:8080/v3/api-docs > openapi.d.ts
         }
     }
     ```
-### Configurando o Prometheus
-- Incluir a dependência
-    ```xml
-    <dependency>
-    <groupId>io.micrometer</groupId>
-    <artifactId>micrometer-registry-prometheus</artifactId>
-    </dependency>
-    ```
-- Habilitar o *endpoint* do *Prometheus* com a propriedade `management.endpoints.web.exposure.include=health,info,prometheus`
-- Acessar o *endpoint* `http://localhost:8081/actuator/prometheus`
-- Criar um arquivo *yaml* para configurar o *Prometheus* com o nome `prometheus-config.yml`
-    ```yaml
-    global:
-      scrape_interval:     15s
-      evaluation_interval: 15s
-    scrape_configs:
-      - job_name: 'faculdade'
-        metrics_path: '/actuator/prometheus'
-        scrape_interval: 5s
-        static_configs:
-        - targets: ["substituir_hostname:8081"]
-    ```
-- Obter a imagem e iniciar um container do *Prometheus*
-    ```shell
-    docker login docker.io
-    docker run -p 9095:9090 -v ./prometheus-config.yml:/etc/prometheus/prometheus.yml --name prometheus prom/prometheus
-    ```
-- Acessar na URL `http://localhost:9090/targets`
 ### Métricas
 - Para habilitar mais *endpoints* alterar `management.endpoints.web.exposure.include=*`
 - Exemplo de uma métrica persinalizada:
@@ -1050,8 +1026,35 @@ npx openapicmd typegen http://localhost:8080/v3/api-docs > openapi.d.ts
     info.app.encoding=@project.build.sourceEncoding@
     info.app.java.version=@java.version@
     ```
-### Outros End Points
-- Por meio do actuator é também possível terminar um serviço (propriedade `management.endpoint.shutdown.enabled=true`)
+### Configurando o Prometheus
+- Instalar o [prometheus](https://prometheus.io/download/)
+- Ou obter a imagem e iniciar um container do *Prometheus*
+    ```shell
+    docker login docker.io
+    docker run -p 9095:9090 -v ./prometheus-config.yml:/etc/prometheus/prometheus.yml --name prometheus prom/prometheus
+    ```
+- Incluir a dependência
+    ```xml
+    <dependency>
+    <groupId>io.micrometer</groupId>
+    <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+    ```
+- Habilitar o *endpoint* do *Prometheus* com a propriedade `management.endpoints.web.exposure.include=prometheus`
+- Acessar o *endpoint* `http://localhost:8081/actuator/prometheus`
+- Criar um arquivo *yaml* para configurar o *Prometheus* com o nome `prometheus-config.yml`
+```yaml
+global:
+    scrape_interval:     15s
+    evaluation_interval: 15s
+scrape_configs:
+    - job_name: 'faculdade'
+      metrics_path: '/actuator/prometheus'
+      scrape_interval: 5s
+      static_configs:
+        - targets: ["substituir_hostname:8081"]
+```
+- Acessar na URL `http://localhost:9090/targets`
 ### Spring Admin Server
 - É uma interface web para administração das aplicações *Spring Boot*
 - Criar um novo projeto *Sprint Boot* e adicionar as dependências:
