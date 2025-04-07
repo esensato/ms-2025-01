@@ -53,7 +53,7 @@ CREATE TABLE CAD_CIDADAO (
 
 1. Criar `end points` para:
     1. Listar todos os cidadãos presentes na base;
-    1. Permitir a consulta de um cidadão pelo seu número (`ID`) e retornar os seus dadods;
+    1. Permitir a consulta de um cidadão pelo seu número (`ID`) e retornar os seus dados;
     1. Possibilitar o cadastro de um novo cidadão;
     1. Permitir a atualização dos dados de um cidadão;
 2. Criar um **micro serviço** que permita o cadastro de um cidadão com a definição de um `username` e `senha` utilizando a base de dados de cidadãos para validar o código do usuário. Incluir neste **micro serviço** a possibilidade de:
@@ -62,8 +62,19 @@ CREATE TABLE CAD_CIDADAO (
     1. Somente permitir um único cadastro de usuário por `ID`;
     1. Usuário tem que trocar a senha caso fique mais de 30 dias sem efetuar *login*;
     1. Desbloqueio de usuário bloqueado;
-3. Cada cidadão pode utilizar os serviços do portal para realizar diversas solicitações. A fim de controlar o fluxo dessas solicitações é necessário implementar, com o **Spring State Machine** um registro de histórico contendo o `ID` do cidadão, e a data em que o estado foi registrado.
+3. Criar um serviço para controlar o pagamento de *IPTU* para a prefeitura
+    1. Supor que todo cidadão tenha que pagar 12000,00 por ano de imposto;
+    1. Existem duas opções: 12 parcelas de 1000,00 ou pagamento único;
+    1. Caso opte por pagamento único, criar um registro em uma tabela contendo 12 parcelas (uma para cada mês) com a primeira parcela no valor de 1000,00 (com desconto) e as demais com o valor 0,00
+    1. Caso opte pelo parcelamento, gerar as 12 parcelas com o valor de 1000,00;
+    1. Criar um controle para saber qual parcela já foi paga;
+    1. Permitir que o cidadão consulte o total de parcelas já pagas e o total devido;
+    1. Criar um *endpoint* para efetuar a baixa de uma parcela;
+    1. Criar uma classe de testes com o **Open Feign** para testar os *endpoints* criados;
+4. Cada cidadão pode utilizar os serviços do portal para realizar diversas solicitações. A fim de controlar o fluxo dessas solicitações é necessário implementar, com o **Spring State Machine** um registro de histórico contendo o `ID` do cidadão, e a data em que o estado foi registrado e a descrição da demanda feita pelo cidadão.
     1. Os estados possíveis são: SOLICITADO, AGUARDANDO_ANALISE e CONCLUIDO
     1. As ações são: ANALISAR e CONCLUIR
     1. Registrar em banco de dados os dados obtidos entre os diferentes estados
     1. Criar um *endpoint* para visualizar o histórico de um cidadão passando como parâmetro o seu `ID`
+    1. Documentar o serviço por meio do padrão **Open API**
+5. Implementar uma métrica que informe quantos usuários já existem cadastrados na plataforma utilizando o **prometheus**
