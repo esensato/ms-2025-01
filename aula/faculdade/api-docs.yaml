@@ -1,0 +1,113 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8084
+  description: Generated server url
+paths:
+  /faculdade/matricula/{rm}/{idDisciplina}:
+    put:
+      tags:
+      - faculdade-controller
+      operationId: matricular
+      parameters:
+      - name: rm
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: idDisciplina
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /faculdade/matricula/cancelar/solicitar/{rm}/{idDisciplina}:
+    put:
+      tags:
+      - faculdade-controller
+      operationId: solicitarCancelamento
+      parameters:
+      - name: rm
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: idDisciplina
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                enum:
+                - SOLICITADO
+                - APROVADO_COORDENADOR
+                - APROVADO_SECRETARIA
+  /faculdade/matricula/cancelar/aprovar/secretaria/{rm}/{idDisciplina}:
+    put:
+      tags:
+      - faculdade-controller
+      operationId: aprovarSecretaria
+      parameters:
+      - name: rm
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: idDisciplina
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                enum:
+                - SOLICITADO
+                - APROVADO_COORDENADOR
+                - APROVADO_SECRETARIA
+  /faculdade/matricula/cancelar/aprovar/coordenador/{rm}/{idDisciplina}:
+    put:
+      tags:
+      - faculdade-controller
+      operationId: aprovarCoordenador
+      parameters:
+      - name: rm
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: idDisciplina
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                enum:
+                - SOLICITADO
+                - APROVADO_COORDENADOR
+                - APROVADO_SECRETARIA
+components: {}

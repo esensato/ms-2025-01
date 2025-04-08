@@ -1,0 +1,16 @@
+{
+  "name": "faculdade-cliente-nodejs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "openapi-client-axios": "^7.5.5",
+    "openapicmd": "^2.6.1"
+  }
+}

@@ -8,8 +8,20 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.info.Contact;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 @RestController
 @RequestMapping("/faculdade")
+@OpenAPIDefinition(info = @Info(title = "Sistema Faculdade", contact = @Contact(email = "edson.sensato@espm.br")))
 public class FaculdadeController {
 
     // gera requisições para o endpoint de Aluno (8080)
@@ -29,6 +41,17 @@ public class FaculdadeController {
 
     // Matricular aluno
     @PutMapping("/matricula/{rm}/{idDisciplina}")
+
+    @Operation(summary = "Matricular aluno", description = "Efetua a matrícula de um aluno em uma disciplina", tags = {
+            "matricula" })
+    @Parameters(value = { @Parameter(name = "rm", description = "Registro de matrícula"),
+            @Parameter(name = "idDisciplina", description = "Identificação da disciplina") })
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Matrícula efetivada com sucesso", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = String.class)) }),
+            @ApiResponse(responseCode = "404", description = "Aluno ou disciplina não localizado", content = @Content) })
+
     public ResponseEntity<String> matricular(@PathVariable String rm, @PathVariable String idDisciplina) {
 
         // verificar se o aluno existe
@@ -55,7 +78,7 @@ public class FaculdadeController {
 
         }
 
-        return new ResponseEntity<String>("Matricula efetuada", HttpStatus.OK);
+        return new ResponseEntity<String>("{\"msg\": \"Matricula efetuada\"}", HttpStatus.OK);
 
     }
 

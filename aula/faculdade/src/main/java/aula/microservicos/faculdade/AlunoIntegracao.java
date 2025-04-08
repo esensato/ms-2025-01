@@ -11,4 +11,7 @@ public interface AlunoIntegracao {
     @GetMapping("/aluno/{rm}")
     public ResponseEntity<IntegracaoEntity> obterAluno(@PathVariable String rm);
 
+    @GetMapping("/aluno")
+    public ResponseEntity<String> health();
+
 }
