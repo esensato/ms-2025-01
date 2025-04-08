@@ -867,21 +867,29 @@ public class CalculadoraSpring {
     }
     ```
 # Exercício
+- Portas
+    | Serviço      | Porta       |
+    | -----------  | ----------- |
+    | Aluno        | 8080        |
+    | Disciplina   | 8081        |
+    | Matrícula    | 8082        |
+    | Faculdade    | 8083        |
+
 - Implementar um serviço CRUD para disciplina com os seguintes requisitos (utilizar *Data Rest*):
     - Disciplina possui um id numérico sequencial, um nome e carga horária;
-    - Criar um endpoint com método POST para criar uma nova disciplina (POST `http://localhost:8080/api/disciplina`);
-    - Criar um endpoint GET para retornar os dados de uma disciplina por id (GET `http://localhost:8080/api/disciplina/{id}`)
-    - Criar um endpoint GET para retornar uma lista contendo todas as disciplinas (GET `http://localhost:8080/api/disciplina`);
-    - Criar um endpoint com um método PUT que permita alterar o nome e a carga horária de uma disciplina (PUT `http://localhost:8080/api/disciplina`);
-    - Criar um endpoint com um método DELETE que permita excluir uma disciplina (DELETE `http://localhost:8080/api/disciplina/{id}`);
+    - Criar um endpoint com método POST para criar uma nova disciplina (POST `http://localhost:8081/api/disciplina`);
+    - Criar um endpoint GET para retornar os dados de uma disciplina por id (GET `http://localhost:8081/api/disciplina/{id}`)
+    - Criar um endpoint GET para retornar uma lista contendo todas as disciplinas (GET `http://localhost:8081/api/disciplina`);
+    - Criar um endpoint com um método PUT que permita alterar o nome e a carga horária de uma disciplina (PUT `http://localhost:8081/api/disciplina`);
+    - Criar um endpoint com um método DELETE que permita excluir uma disciplina (DELETE `http://localhost:8081/api/disciplina/{id}`);
 - Criar um serviço para controle de matrícula:
     - Matrícula possui id do aluno, id da disciplina e um status (ATIVO, CANCELADO)
-    - Definir um endpoint para associar o id de um aluno ao id de uma disciplina (POST `http://localhost:8080/matricula/{idAluno}/{idDisciplina}`);
-    - Definir um endpoint para cancelar a matrícula do aluno de uma disciplina alterando o status (DELETE `http://localhost:8080/matricula/{idAluno}/{idDisciplina}`);
+    - Definir um endpoint para associar o id de um aluno ao id de uma disciplina (POST `http://localhost:8082/matricula/{idAluno}/{idDisciplina}`);
+    - Definir um endpoint para cancelar a matrícula do aluno de uma disciplina alterando o status (DELETE `http://localhost:8082/matricula/{idAluno}/{idDisciplina}`);
 - Criar um serviço orquestrador chamado faculdade para:
-    - Retornar todas as disciplinas ativas de um determinado aluno (GET `http://localhost:8080/faculdade/disciplinas/{idAluno}`);
-    - Retornar a carga horária total de um aluno (GET `http://localhost:8080/faculdade/carga/{idAluno}`);
-    - Remover uma disciplina (somente permitir excluir uma disciplina que não possua alunos associados) (DELETE `http://localhost:8080/faculdade/disciplinas/{idDisciplina}`);
+    - Retornar todas as disciplinas ativas de um determinado aluno (GET `http://localhost:8083/faculdade/disciplinas/{idAluno}`);
+    - Retornar a carga horária total de um aluno (GET `http://localhost:8083/faculdade/carga/{idAluno}`);
+    - Remover uma disciplina (somente permitir excluir uma disciplina que não possua alunos associados) (DELETE `http://localhost:8083/faculdade/disciplinas/{idDisciplina}`);
 
 ## Documentação Endpoints
 - Padrão [OpenAPI](https://spec.openapis.org/oas/latest.html)

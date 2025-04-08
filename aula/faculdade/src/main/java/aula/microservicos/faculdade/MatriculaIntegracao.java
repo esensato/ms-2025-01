@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@FeignClient(name = "matricula", url = "localhost:8083")
+@FeignClient(name = "matricula", url = "localhost:8082")
 public interface MatriculaIntegracao {
 
     @PostMapping("/api/matricula")
