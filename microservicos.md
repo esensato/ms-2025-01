@@ -867,7 +867,7 @@ public class CalculadoraSpring {
     }
     ```
 # Exercício
-- Portas
+
     | Serviço      | Porta       |
     | -----------  | ----------- |
     | Aluno        | 8080        |
@@ -1024,6 +1024,7 @@ npx openapicmd typegen http://localhost:8080/v3/api-docs > openapi.d.ts
         }
     }
     ```
+- As métricas podem ser acessadas no *endpoint* `metrics`
 ### Informações
 - Algumas configurações podem ser habilitadas:
     ```java
@@ -1115,94 +1116,198 @@ scrape_configs:
 - Apontar para o *Admin Server* com as propriedades `spring.boot.admin.client.url=http://localhost:8082` e `management.endpoint.health.show-details=always`
 ## Segurança Básica
 - Para garantir um nível de segurança mínimo para os *endpoints* é possível ativar um *starter*
-    ```xml
-    <dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-security</artifactId>
-    </dependency>
-    ```
+```xml
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+```
 - Observar após o início do serviço que é getada uma senha automaticamnte para acesso:
 
-    `Using generated security password: 2cee0e0c-3e35-453d-ac8b-f3f040c849cf`
+`Using generated security password: 2cee0e0c-3e35-453d-ac8b-f3f040c849cf`
 
 - Por padrão o usuário definido é *user*
 - Ao tentar acessar qualquer *endpoint* sem fornecer as credenciais será gerado um erro HTTP 401 (Unauthorized)
 - Para que seja autorizado o acesso deve-se definir no cabeçalho da requisição o tipo de Autorização *Basic*
 - Caso seja necessário fornecer um usuário e senha padrão basta editar o `application.properties` e definir as seguintes propriedades:
-    ```javascript
-    spring.security.user.name = teste
-    spring.security.user.password = 123
-    ```
-### RestClient
-- Definir no Header da requisição:
-    ```java
-    String plainCreds = "teste:123";
-    byte[] plainCredsBytes = plainCreds.getBytes();
-    byte[] base64CredsBytes = Base64.getEncoder().encode(plainCredsBytes);
-    String base64Creds = new String(base64CredsBytes);
-    ResponseEntity<AlunoBean> response = restClient.get()
-                    .uri("http://localhost:8080/aluno/{idAluno}", idAluno)
-                    .header("Authorization", "Basic " + base64Creds)
-                    .retrieve()
-                    .toEntity(AlunoBean.class);
-    ```
+```javascript
+spring.security.user.name = teste
+spring.security.user.password = 123
+```
 ### Cross Site Request Forgery (CSRF)
 - É uma proteção de segurança que impede que serviços hospedados em servidores distintos sejam acessados mutuamente
 - Para desabilitar o *CSRF*:
-    ```javascript
-    @Configuration
-    public class SecurityConfig extends WebSecurityConfigurerAdapter {
-    
-        @Override
-        protected void configure(HttpSecurity http) throws Exception {
-           super.configure(http);
-           http.csrf().disable();
-        }
-    }
-    ```
+```java
+@Configuration
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+       super.configure(http);
+       http.csrf().disable();
+    }
+}
+```
 ## Personalizando a Segurança
-- Criar uma classe para sobrescrever a seguraça padrão:
+- Configuração básica (*default*)
+```java
+import static org.springframework.security.config.Customizer.withDefaults;
 
-    ```java
-    @Configuration
-    @EnableWebSecurity
-    public class CustomSecurity {
-        @Bean
-        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    
-            http.authorizeHttpRequests(authz -> authz
-                    .requestMatchers("/seguranca/publico/**").permitAll()
-                    .requestMatchers("/seguranca/admin/**").hasRole("ADMIN")
-                    .anyRequest().authenticated())
-                    .httpBasic(Customizer.withDefaults());
-            return http.build();
+@Configuration
+public class SecurityConfig {
 
-        }
-    
-        @Bean
-        public InMemoryUserDetailsManager userDetailsService(PasswordEncoder passwordEncoder) {
-    
-            UserDetails user = User.withUsername("user")
-                    .password(passwordEncoder.encode("password"))
-                    .roles("USER")
-                    .build();
-    
-            UserDetails admin = User.withUsername("admin")
-                    .password(passwordEncoder.encode("admin"))
-                    .roles("USER", "ADMIN")
-                    .build();
-    
-            return new InMemoryUserDetailsManager(user, admin);
-        }
-    
-        @Bean
-        public PasswordEncoder passwordEncoder() {
-            PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
-            return encoder;
-        }
-    
+    @Bean
+    SecurityFilterChain defauSecurityFilterChain(HttpSecurity http) throws Exception {
+
+        http.authorizeHttpRequests((requests) -> requests.anyRequest().authenticated());
+        http.formLogin(withDefaults());
+        http.httpBasic(withDefaults());
+
+        return http.build();
     }
-    ```
+
+}
+```
+- As opções para o `authorizeHttpRequests` podem ser:
+    - `authenticated()`
+    - `denyAll()`
+    - `permitAll()`
+- Para *enspoints* específicos utilizar o `requestMatchers` ao invés de `anyRequest`
+```java
+http.authorizeHttpRequests((requests) -> requests.requestMatchers("/seguranca/info").permitAll());
+```
+- Para desabilitar o formulário de *login* padrão (neste caso a tela de login será de responsabilidade do navegador)
+```java
+http.formLogin(config -> config.disable());
+```
+- Testar o acesso pelo *PostMan* passando usuário e senha como autenticação básica via *header*
+- Para desabilitar a autenticação básica (nem a tela de login do navegaddor irá aparecer):
+```java
+http.httpBasic(config -> config.disable());
+```
+- Para acessar o serviço via *RestClient* incluir no *header* da requisição o valor para *Authorization*:
+```java
+String plainCreds = "teste:123";
+byte[] plainCredsBytes = plainCreds.getBytes();
+byte[] base64CredsBytes = Base64.getEncoder().encode(plainCredsBytes);
+String base64Creds = new String(base64CredsBytes);
+ResponseEntity<AlunoBean> response = restClient.get()
+                .uri("http://localhost:8080/aluno/{idAluno}", idAluno)
+                .header("Authorization", "Basic " + base64Creds)
+                .retrieve()
+                .toEntity(AlunoBean.class);
+```
+- Utilizando o **OpenFeign**
+```java
+@FeignClient(name = "testeClient", url = "http://usuario:senha@localhost:8080")
+public interface FaculdadeInfo {
+
+    @GetMapping("/faculdade/info")
+    String getInfo();
+
+}
+```
+#### Definindo Usuários em Memória
+- Remover as propriedades padrão `spring.security.user.name` e `spring.security.user.password` do `application.properties`
+- Na classe `SecurityConfig` adicionar o *bean* `userDetailsService`
+```java
+@Bean
+public InMemoryUserDetailsManager userDetailsService(PasswordEncoder passwordEncoder) {
+
+    UserDetails user = User.withUsername("user")
+            .password("{noop}user")
+            .roles("USER")
+            .build();
+
+    UserDetails admin = User.withUsername("admin")
+            .password("{noop}admin")
+            .roles("USER", "ADMIN")
+            .build();
+
+    return new InMemoryUserDetailsManager(user, admin);
+}
+```
+- O valor `{noop}` para as senhas indica que elas não serão criptografadas
+- Para criptografar as senhas implementar um outro *bean* `passwordEncoder`
+```java
+@Bean
+public PasswordEncoder passwordEncoder() {
+    PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    return encoder;
+}
+```
+- Remover a opção `{noop}` e informar a senha no formato [BCrypt](https://bcrypt-generator.com/)
+#### Definindo Usuários em Banco de Dados (JDBC)
+- Incluir a dependência:
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-jdbc</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <scope>runtime</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-devtools</artifactId>
+    <scope>runtime</scope>
+    <optional>true</optional>
+</dependency>
+```
+- Configurar o **H2** como banco de dados de usuários
+```java
+spring.datasource.url=jdbc:h2:mem:segurancadb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=password
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.jpa.defer-datasource-initialization=true
+spring.h2.console.enabled=true
+spring.jpa.show-sql=true
+```
+- Esta implementação utiliza um *schema* fixo para armazenar os dados do usuário de acordo como a *DDL* abaixo no arquivo `data.sql`
+```sql
+create table users(username varchar(50) not null primary key,password varchar(500) not null, enabled boolean not null);
+create table authorities (username varchar(50) not null,authority varchar_ignorecase(50) not null,constraint fk_authorities_users foreign key(username) references users(username));
+create unique index ix_auth_username on authorities (username,authority);
+```
+- Definir o *bean* como `JdbcUserDetailsManager` passando como parâmetro o *datasource* configurado
+```java
+@Bean
+public JdbcUserDetailsManager userDetailsService(DataSource datasource) {
+
+    return new JdbcUserDetailsManager(datasource);
+}
+```
+#### Definindo Usuários em Banco de Dados (JPA)
+- Incluir a dependência para o *JPA*
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+```
+- Criar a entidade para representar o usuário e mapear para o *schema* de banco de dados
+- Criar o repositório com um método para retornar o usuário a partir de um atributo, por exempo, o email
+- Implementar o próprio `UserDetailsService`
+```java
+@Service
+public class UsuarioService implements UserDetailsService {
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+
+        List<GrantedAuthority> auth = List.of(new SimpleGrantedAuthority(username.getRole()));
+        return new User(username, senha, auth);
+    }
+
+}
+```
+- Remover o `userDetailsService` da classe de configuração!
 ## Autenticação e Autorização com OAuth2
 - Instalar o *Keycloack* como provedor de autenticação
 - Utilizar o ambiente on-line para o docker [Play With Docker](https://labs.play-with-docker.com/)
