@@ -1292,22 +1292,181 @@ public JdbcUserDetailsManager userDetailsService(DataSource datasource) {
 </dependency>
 ```
 - Criar a entidade para representar o usuário e mapear para o *schema* de banco de dados
-- Criar o repositório com um método para retornar o usuário a partir de um atributo, por exempo, o email
+```sql
+create table usuario(username varchar(50) not null primary key,password varchar(500) not null, roles varchar(500));
+
+insert into usuario(username, password, roles) values ('admin', '{noop}admin', 'ROLE_ADMIN');
+
+insert into usuario(username, password, roles) values ('user', '{noop}user', 'ROLE_USER');
+
+```
+- Por padrão, toda *role* deve ser precedida pelo prefixo `ROLE_`
+```java
+@Entity
+@Table(name = "Usuario")
+public class UsuarioEntity {
+
+    @Id
+    private String username;
+
+    private String password;
+
+    private String roles;
+}
+```
+- Criar o repositório com um método para retornar o usuário a partir de um atributo, por exempo, o nome (que no caso é o `id`)
+```java
+@Repository
+public interface SegurancaRepositorio extends CrudRepository<UsuarioEntity, String> {
+    
+}
+```
 - Implementar o próprio `UserDetailsService`
 ```java
 @Service
-public class UsuarioService implements UserDetailsService {
+public class SegurancaService implements UserDetailsService {
+
+    @Autowired
+    private SegurancaRepositorio repo;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        List<GrantedAuthority> auth = List.of(new SimpleGrantedAuthority(username.getRole()));
-        return new User(username, senha, auth);
+        if (repo.findById(username).isPresent()) {
+            UsuarioEntity usuario = repo.findById(username).get();
+            List<GrantedAuthority> auth = new ArrayList<GrantedAuthority>();
+            for (String role : usuario.getRoles().split("\\;")) {
+                auth.add(new SimpleGrantedAuthority(role));
+            }
+            return new User(usuario.getUsername(), usuario.getPassword(), auth);
+        } else
+            throw new UsernameNotFoundException(username);
+    }
+}
+```
+- Remover o `userDetailsService` da classe de configuração!
+#### Authorities e Roles
+- **Authorities**: permissões mais específicas, mais granulares
+- **Roles**: agrupamentos de **Authorities**
+- Erros de autorização são representados pelo código HTTP *403* ao invés de *401*
+- Alterar o `defauSecurityFilterChain` para implementar o uso de *roles* (observar que o nome das *roles* não deve iniciar por `ROLE_`)
+```java
+@Bean
+SecurityFilterChain defauSecurityFilterChain(HttpSecurity http) throws Exception {
+
+    http.authorizeHttpRequests((requests) -> requests.requestMatchers("/seguranca/info").permitAll()
+            .requestMatchers("/seguranca/admin").hasRole("ADMIN").requestMatchers("/seguranca/user")
+            .hasAnyRole("ADMIN", "USER"));
+    http.formLogin(withDefaults());
+    http.httpBasic(withDefaults());
+
+    return http.build();
+}
+```
+- Para capturar eventos de falha de autorização
+```java
+@Component
+public class AuthorizationEvent {
+
+    @EventListener
+    public void onFailure(AuthorizationDeniedEvent<UsuarioEntity> evento) {
+
+        System.out.println(evento.getAuthentication().get().getName());
+
+    }
+}
+```
+#### Tokens JWT
+- Importar
+```xml
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt</artifactId>
+    <version>0.9.1</version>
+</dependency>
+```
+- Gerar o token
+```java
+public class JwtUtil {
+
+    private static final String SECRET_KEY = "chave-super-secreta";
+
+    public static String gerarToken(String username) {
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 1 hora
+                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+                .compact();
+    }
+}
+```
+- Validar um token gerado
+```java
+    public static boolean validateToken(String token) {
+        try {
+            Jwts.parser()
+                .setSigningKey(SECRET_KEY)
+                .parseClaimsJws(token); // se não lançar exceção, está ok
+            return true;
+        } catch (ExpiredJwtException e) {
+            System.out.println("Token expirado");
+        } catch (SignatureException e) {
+            System.out.println("Assinatura inválida");
+        } catch (Exception e) {
+            System.out.println("Token inválido");
+        }
+        return false;
+    }
+```
+- Incluir mais atributos para a geração do token
+```java
+Map<String, Object> claims = new HashMap<>();
+claims.put("email", email);
+claims.put("role", role);
+
+return Jwts.builder()
+        .setClaims(claims)
+        .setSubject(username)
+        .setIssuedAt(new Date())
+        .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 1 hora
+        .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+        .compact();
+```
+- Para obter os atributos a partir do *token* usar o `getBody()`
+```java
+return Jwts.parser()
+        .setSigningKey(SECRET_KEY)
+        .parseClaimsJws(token)
+        .getBody();
+```
+- Criar um filtro para gerar o *token*
+```java
+public class RequestFilter extends OncePerRequestFilter {
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        response.setHeader("JWT-TOKEN", JwtUtil.gerarToken(auth.getName()));
+        doFilter(request, response, filterChain);
+
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+
+        return request.getServletPath().equals("/login");
     }
 
 }
 ```
-- Remover o `userDetailsService` da classe de configuração!
+
+```java
+    http.sessionManagement(sessionConfig -> sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+    http.addFilterAfter(new RequestFilter(), BasicAuthenticationFilter.class);
+```
 ## Autenticação e Autorização com OAuth2
 - Instalar o *Keycloack* como provedor de autenticação
 - Utilizar o ambiente on-line para o docker [Play With Docker](https://labs.play-with-docker.com/)
