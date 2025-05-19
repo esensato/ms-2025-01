@@ -1954,24 +1954,25 @@ public class Chat {
 ## Kafka
 
 - Efetuar o download e instalação do [Apache Kafka](https://kafka.apache.org/downloads)
-- Gerar o id do cluster com `./kafka-storage.sh random-uuid`
-- Criar os diretórios `kafka-storage.sh format --standalone -t [COLE AQUI O RESULTADO DO ITEM ANTERIOR] -c ../config/server.properties`
-- Iniciar o *Kafka*: `./kafka-server-start.sh config/server.properties`
+- Para *Windows* os comandos abaixo devem ser executados no diretório do kafka `bin\windows`
+- Gerar o id do cluster com `kafka-storage.bat random-uuid`
+- Criar os diretórios `kafka-storage.bat format --standalone -t [COLE AQUI O RESULTADO DO ITEM ANTERIOR] -c ..\config\server.properties`
+- Iniciar o *Kafka*: `kafka-server-start.bat c..\config\server.properties`
 - Cria um novo tópico
 
-`.\kafka-topics.bat --create --topic MeuTopico --bootstrap-server localhost:9092`
+`kafka-topics.bat --create --topic MeuTopico --bootstrap-server localhost:9092`
 
 - Listar tópicos criados
 
-`.\kafka-topics.bat --list --bootstrap-server localhost:9092`
+`kafka-topics.bat --list --bootstrap-server localhost:9092`
 
 - Inserir itens no tópico
 
-`.\kafka-console-producer.bat --topic MeuTopico --bootstrap-server localhost:9092`
+`kafka-console-producer.bat --topic MeuTopico --bootstrap-server localhost:9092`
 
 - Consumir itens do tópico
 
-`.\kafka-console-consumer.bat --topic MeuTopico --from-beginning --bootstrap-server localhost:9092`
+`kafka-console-consumer.bat --topic MeuTopico --from-beginning --bootstrap-server localhost:9092`
 
 
 ## Kafka e SpringBoot
