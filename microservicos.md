@@ -1468,12 +1468,7 @@ public class RequestFilter extends OncePerRequestFilter {
     http.addFilterAfter(new RequestFilter(), BasicAuthenticationFilter.class);
 ```
 ## Autenticação e Autorização com OAuth2
-- Instalar o *Keycloack* como provedor de autenticação
-- Utilizar o ambiente on-line para o docker [Play With Docker](https://labs.play-with-docker.com/)
-- Executar um container com o *Keycloack*
-    ```s
-    docker run -p 9090:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:24.0.2 start-dev
-    ```
+- Instalar o [Keycloack](https://www.keycloak.org/downloads) como provedor de autenticação
 - Acessar o console do *Keycloack* e efetuar login como `admin`/`admin`
 - Seguir o [Guia de Configuração do Keyglock](https://www.keycloak.org/getting-started/getting-started-docker)
 - Desabilitar User verify profile (Authentication (menu lateral esquerdo) -> Required actios tab)
@@ -1485,7 +1480,7 @@ public class RequestFilter extends OncePerRequestFilter {
         - password:<your_password>
         - grant_type:password
 - O token obtido pode ser decodificado em (Jwt)[https://jwt.io/]
-- Para as requisições aos endpoints o token dever-a ser passado no header como 'Authorization': 'Bearer' + access_token
+- Para as requisições aos endpoints o token deve ser passado no header como 'Authorization': 'Bearer' + access_token
 ### Configuração no Spring
 - Incluir a dependência abaixo:
 ```xml
@@ -1493,128 +1488,124 @@ public class RequestFilter extends OncePerRequestFilter {
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
 </dependency>
+
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-oauth2-jose</artifactId>
+</dependency>
 ```
 - Requisitar o token
-    ```java
-    @RestController
-    @RequestMapping("/login")
-    public class Login {
-    
-        @GetMapping
-        public ResponseEntity<String> login() {
-    
-            RestTemplate restTemplate = new RestTemplate();
-    
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-    
-            MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<String, String>();
-            requestBody.add("username", "admin");
-            requestBody.add("password", "admin");
-            requestBody.add("client_id", "faculdade");
-            requestBody.add("grant_type", "password");
-    
-            ResponseEntity<String> response = restTemplate.postForEntity(
-                    "http://localhost:9090/realms/FaculdadeHealm/protocol/openid-connect/token",
-                    new HttpEntity<>(requestBody, headers), String.class);
-    
-            JSONObject json = new JSONObject(response.getBody());
-            System.out.println(json);
-            return response;
-        }
-    
-    }
-    ```
+
+```java
+@GetMapping("/login/{usuario}/{senha}")
+public ResponseEntity<String> logintoken(@PathVariable String usuario, @PathVariable String senha) {
+
+    RestTemplate restTemplate = new RestTemplate();
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+    MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<String, String>();
+    requestBody.add("username", usuario);
+    requestBody.add("password", senha);
+    requestBody.add("client_id", "seguranca");
+    requestBody.add("grant_type", "password");
+
+    ResponseEntity<String> response = restTemplate.postForEntity(
+            "http://localhost:9090/realms/seguranca/protocol/openid-connect/token",
+            new HttpEntity<>(requestBody, headers), String.class);
+
+    JSONObject json = new JSONObject(response.getBody());
+    System.out.println(json);
+    return response;
+}
+```
 - Incluir essas propriedades
-    ```properties
-    # Security Configuration
-    spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:9090/realms/FaculdadeHealm
-    spring.security.oauth2.resourceserver.jwt.jwk-set-uri=${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
-    
-    # JWT Configuration
-    jwt.auth.converter.resource-id=faculdade
-    jwt.auth.converter.principal-attribute=admin
-    
-    # Logging Configuration
-    logging.level.org.springframework.security=TRACE
-    ```
+```properties
+# Security Configuration
+spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:9090/realms/FaculdadeHealm
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri=${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+
+# JWT Configuration
+jwt.auth.converter.resource-id=faculdade
+jwt.auth.converter.principal-attribute=admin
+
+# Logging Configuration
+logging.level.org.springframework.security=TRACE
+```
 - Criar um conversor para o Token para obter as ROLES:
-    ```java
-    import java.util.Collection;
-    import java.util.Map;
-    import java.util.stream.Collectors;
-    import java.util.stream.Stream;
-    
-    import org.springframework.core.convert.converter.Converter;
-    import org.springframework.security.authentication.AbstractAuthenticationToken;
-    import org.springframework.security.core.GrantedAuthority;
-    import org.springframework.security.core.authority.SimpleGrantedAuthority;
-    import org.springframework.security.oauth2.jwt.Jwt;
-    import org.springframework.security.oauth2.jwt.JwtClaimNames;
-    import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-    import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-    import org.springframework.stereotype.Component;
-    
-    @Component
-    public class JwtConverter implements Converter<Jwt, AbstractAuthenticationToken> {
-    
-        private final JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-    
-        public JwtConverter() {
-            super();
-        }
-    
-        @Override
-        public AbstractAuthenticationToken convert(Jwt jwt) {
-            Collection<GrantedAuthority> authorities = Stream.concat(
-                    jwtGrantedAuthoritiesConverter.convert(jwt).stream(),
-                    extractResourceRoles(jwt).stream()).collect(Collectors.toSet());
-            return new JwtAuthenticationToken(jwt, authorities, getPrincipalClaimName(jwt));
-        }
-    
-        private String getPrincipalClaimName(Jwt jwt) {
-            String claimName = JwtClaimNames.SUB;
-    
-            claimName = "preferred_username";
-    
-            return jwt.getClaim(claimName);
-        }
-    
-        private Collection<? extends GrantedAuthority> extractResourceRoles(Jwt jwt) {
-            Map<String, Object> resourceAccess = jwt.getClaim("realm_access");
-    
-            Collection<String> resourceRoles;
-    
-            resourceRoles = (Collection<String>) resourceAccess.get("roles");
-    
-            return resourceRoles.stream()
-                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                    .collect(Collectors.toSet());
-        }
+```java
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.stereotype.Component;
+
+@Component
+public class JwtConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+
+    private final JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+
+    public JwtConverter() {
+        super();
     }
-    ```
+
+    @Override
+    public AbstractAuthenticationToken convert(Jwt jwt) {
+        Collection<GrantedAuthority> authorities = Stream.concat(
+                jwtGrantedAuthoritiesConverter.convert(jwt).stream(),
+                extractResourceRoles(jwt).stream()).collect(Collectors.toSet());
+        return new JwtAuthenticationToken(jwt, authorities, getPrincipalClaimName(jwt));
+    }
+
+    private String getPrincipalClaimName(Jwt jwt) {
+
+        return jwt.getClaim("preferred_username");
+    }
+
+    private Collection<? extends GrantedAuthority> extractResourceRoles(Jwt jwt) {
+        Map<String, List<String>> resourceAccess = jwt.getClaim("realm_access");
+        Collection<String> resourceRoles = resourceAccess.get("roles");
+        return resourceRoles.stream()
+                .map(role -> new SimpleGrantedAuthority(role))
+                .collect(Collectors.toSet());
+    }
+}
+```
 - Atualizar o `FaculdadeSecurity`
-    ```java
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    
-            http.authorizeHttpRequests(authz -> authz
-                            // permite o acesso publico ao endpoint /aluno/ping
-                            .requestMatchers("/aluno/ping").permitAll()
-                            .requestMatchers("/api/**").permitAll()
-                            .requestMatchers("/login/**").permitAll()
-                            .requestMatchers("/aluno/nome/**").hasRole("ADMIN")
-                            .requestMatchers("/aluno/curso/**").authenticated()
-                            .anyRequest().authenticated());
-    
-            http.sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-    
-            http.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter)));
-    
-            return http.build();
-    
-    }
-    ```
+```java
+
+@Autowired
+JwtConverter jwtConverter;
+
+@Bean
+SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+
+    http.authorizeHttpRequests(
+            (requests) -> requests.requestMatchers("/seguranca/login").permitAll()
+                    .requestMatchers("/seguranca/user").hasAnyRole("USER", "ADMIN")
+                    .requestMatchers("/seguranca/admin").hasRole("ADMIN")
+                    .requestMatchers("/seguranca/info").permitAll());
+
+    http.sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+    http.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter)));
+
+    http.csrf(csrf -> csrf.disable());
+
+    return http.build();
+
+}
+```
 ## Websocket e STOMP
 - *Websocket* é um protocolo **bidirecional** (*full-duplex*) para processamento de mensagens em tempo real
 - O protocolo *HTTP* é utilizado inicialmente para o estabelecimento da conexão
@@ -1659,97 +1650,98 @@ public class RequestFilter extends OncePerRequestFilter {
 - A conexão principal deverá ser feita em `http://localhost:8080/mensagem`
 - Ao realizar um simples **GET** neste *endpoint* a seguinte resposta é esperada *Welcome to SockJS!*
 - Criar uma classe para encapsular as mensagens
-    ```java
-    public class Mensagem {
-    
-        private String mensagem;
-    
-        public String getMensagem() {
-            return mensagem;
-        }
-    
-        public void setMensagem(String mensagem) {
-            this.mensagem = mensagem;
-        }
+```java
+public class Mensagem {
+
+    private String mensagem;
+
+    public String getMensagem() {
+        return mensagem;
     }
-    ```
+
+    public void setMensagem(String mensagem) {
+        this.mensagem = mensagem;
+    }
+}
+```
 - Implementar o *Controller* que irá receber as mensagens e encaminhar para a fila ou tópico
-    ```java
-    @Controller
-    public class Chat {
-    
-        @MessageMapping("/chat")
-        @SendTo("/topic/mensagens") // direciona para os inscritos no tópico
-        public Mensagem getMensagens(Mensagem mensagem) {
-            return mensagem;
-        }
-    
+```java
+@Controller
+public class Chat {
+
+    @MessageMapping("/chat")
+    @SendTo("/topic/mensagens") // direciona para os inscritos no tópico
+    public Mensagem getMensagens(Mensagem mensagem) {
+        return mensagem;
     }
-    ```
+
+}
+```
 - Mensagens enviadas do cliente por meio do caminho `/app/chat` serão encaminhadas no *Controller* para o *broker* no caminho `/topic/mensagens`
 - Clientes inscritos no `/topic/mensagens` recebem as mensagens encaminhadas
 - Os clientes deverão se inscrever 
 - Criar uma pasta *public* dentro de *java* para publicação de conteúdo estático
 - Na pasta *public*, incluir o seguinte cliente *HTML*
-    ```html
-    <html>
-    
-    <head>
-        <!-- Bibliotecas sockjs e stomp javascript -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-    
-        <script>
-    
-            // estabelece a conexão com o endpoint principal
-            let sock = new SockJS("http://localhost:8080/mensagem");
-    
-            // cria o cliente Websocket utilizando o protocolo STOMP
-            let client = Stomp.over(sock);
-    
-            // efetua a conexão e registra a função de callback
-            client.connect({}, frame => {
-    
-                // se inscreve no tópico "/topic/mensagens" para receber as mensagens
-                client.subscribe("/topic/mensagens", payload => {
-    
-                    let message_list = document.getElementById('message-list');
-                    let message = document.createElement('li');
-    
-                    message.appendChild(document.createTextNode(JSON.parse(payload.body).mensagem));
-                    message_list.appendChild(message);
-    
-                });
-    
+```html
+<html>
+
+<head>
+    <!-- Bibliotecas sockjs e stomp javascript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+    <script>
+
+        // estabelece a conexão com o endpoint principal
+        let sock = new SockJS("http://localhost:8080/mensagem");
+
+        // cria o cliente Websocket utilizando o protocolo STOMP
+        let client = Stomp.over(sock);
+
+        // efetua a conexão e registra a função de callback
+        client.connect({}, frame => {
+
+            // se inscreve no tópico "/topic/mensagens" para receber as mensagens
+            client.subscribe("/topic/mensagens", payload => {
+
+                let message_list = document.getElementById('message-list');
+                let message = document.createElement('li');
+
+                message.appendChild(document.createTextNode(JSON.parse(payload.body).mensagem));
+                message_list.appendChild(message);
+
             });
-    
-            // envia a mensagem
-            function sendMessage() {
-    
-                let input = document.getElementById("mensagem");
-                let message = input.value;
-    
-                client.send("/app/chat", {}, JSON.stringify({ mensagem: message }));
-    
-            }
-    
-        </script>
-    </head>
-    
-    <body>
-        <h1>Chat</h1>
-    
-        <label for="mensagem">Mensagem:</label>
-        <input type="text" id="mensagem">
-    
-        <button onclick="sendMessage()">Enviar</button>
-    
-        <ul id="message-list"></ul>
-    
-    </body>
-    
-    </html>
-    ```
+
+        });
+
+        // envia a mensagem
+        function sendMessage() {
+
+            let input = document.getElementById("mensagem");
+            let message = input.value;
+
+            client.send("/app/chat", {}, JSON.stringify({ mensagem: message }));
+
+        }
+
+    </script>
+</head>
+
+<body>
+    <h1>Chat</h1>
+
+    <label for="mensagem">Mensagem:</label>
+    <input type="text" id="mensagem">
+
+    <button onclick="sendMessage()">Enviar</button>
+
+    <ul id="message-list"></ul>
+
+</body>
+
+</html>
+```
+- Acessar o *chat* no endereço `http://localhost:8080/chat.html`
 ## Programação Reativa
 
 - Mono: Cria um stream de dados para somente 1 único elemento
@@ -1962,14 +1954,9 @@ public class RequestFilter extends OncePerRequestFilter {
 ## Kafka
 
 - Efetuar o download e instalação do [Apache Kafka](https://kafka.apache.org/downloads)
-- Principalmente para usuários *Windows* descompactar o arquivo na raiz do **C:\\** e renomear a pasta para *kafka*
-- Para usuários Windows deve ser utilizado o *Windows Power Shell*
-- Editar arquivo `KAFKA_HOME/config/server.properties`
-- Alterar propriedade `log.dirs=/tmp/kafka-logs`
-- Editar arquivo `KAFKA_HOME/config/zookeper.properties`
-- Alterar propriedade `dataDir=/tmp/zookeeper`
-- Iniciar o *Zookeper*: `.\zookeeper-server-start.bat ..\..\config\zookeeper.properties`
-- Iniciar o *Kafka*: `.\kafka-server-start.bat ..\..\config\server.properties`
+- Gerar o id do cluster com `./kafka-storage.sh random-uuid`
+- Criar os diretórios `kafka-storage.sh format --standalone -t [COLE AQUI O RESULTADO DO ITEM ANTERIOR] -c ../config/server.properties`
+- Iniciar o *Kafka*: `./kafka-server-start.sh config/server.properties`
 - Cria um novo tópico
 
 `.\kafka-topics.bat --create --topic MeuTopico --bootstrap-server localhost:9092`
