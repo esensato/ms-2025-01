@@ -2069,15 +2069,15 @@ public class Chat {
     }
     ```
 - Serialização de Objetos
-    ```properties
-    spring.kafka.consumer.value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-    spring.kafka.producer.value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-    spring.kafka.consumer.properties.spring.json.trusted.packages=*
-    ```
+```properties
+spring.kafka.consumer.value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+spring.kafka.producer.value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+spring.kafka.consumer.properties.spring.json.trusted.packages=*
+```
 - Exemplo de código
-    ```java
-    private KafkaTemplate<String, Object> kafkaTemplate;
-    ```
+```java
+private KafkaTemplate<String, Object> kafkaTemplate;
+```
 ## Versionamento de API
 - Via URL
     ```

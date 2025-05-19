@@ -78,3 +78,6 @@ CREATE TABLE CAD_CIDADAO (
     1. Criar um *endpoint* para visualizar o histórico de um cidadão passando como parâmetro o seu `ID`
     1. Documentar o serviço por meio do padrão **Open API**
 5. Implementar uma métrica que informe quantos usuários já existem cadastrados na plataforma utilizando o **prometheus**
+6. A prefeitura de springfield deseja agregar um serviço de comunicados para os cidadãos utilizando o **Kafka**
+    1. Crie um endpoint para que a prefeitura possa publicar mensagens em um tópico
+    1. Crie um endpoint para que os cidadãos possam visualizar / consumir as mensagens publicadas
