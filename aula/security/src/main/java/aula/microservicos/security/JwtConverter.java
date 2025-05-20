@@ -11,7 +11,6 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.stereotype.Component;
@@ -35,19 +34,16 @@ public class JwtConverter implements Converter<Jwt, AbstractAuthenticationToken>
 
     private String getPrincipalClaimName(Jwt jwt) {
 
-        System.out.println("JWT-----> " + jwt.getClaims().get("preferred_username"));
+        System.out.println("-----> USERNAME: " + jwt.getClaim("preferred_username"));
 
         return jwt.getClaim("preferred_username");
     }
 
     private Collection<? extends GrantedAuthority> extractResourceRoles(Jwt jwt) {
         Map<String, List<String>> resourceAccess = jwt.getClaim("realm_access");
-
-        System.out.println("JWT resourceAccess -----> " + resourceAccess.keySet());
-
         Collection<String> resourceRoles = resourceAccess.get("roles");
 
-        System.out.println("JWT resourceRoles -----> " + resourceRoles);
+        System.out.println("-----> ROLES: " + resourceRoles);
 
         return resourceRoles.stream()
                 .map(role -> new SimpleGrantedAuthority(role))

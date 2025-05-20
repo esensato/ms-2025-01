@@ -23,20 +23,11 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 
-        // http.authorizeHttpRequests(
-        // (requests) -> requests.requestMatchers("/seguranca/admin").hasRole("ADMIN")
-        // .requestMatchers("/seguranca/user").hasAnyRole("USER", "ADMIN")
-        // .requestMatchers("/seguranca/login/*/*").permitAll()
-        // .requestMatchers("/seguranca/info").permitAll());
-
         http.authorizeHttpRequests(
                 (requests) -> requests.requestMatchers("/seguranca/login").permitAll()
                         .requestMatchers("/seguranca/user").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/seguranca/admin").hasRole("ADMIN")
                         .requestMatchers("/seguranca/info").permitAll());
-
-        // http.authorizeHttpRequests(
-        // (requests) -> requests.anyRequest().permitAll());
 
         http.sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
